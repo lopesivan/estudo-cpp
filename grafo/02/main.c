@@ -1,9 +1,16 @@
 #include <stdio.h>
 
+
+// 0 1 2
+// *-*-*
+
 int main()
 {
     // Cria a matriz de adjacências do grafo
-    int grafo[3][3] = { {0, 1, 0}, {1, 0, 1}, {0, 1, 0} }; // O grafo tem 3 vértices
+    int grafo[3][3] = { 
+        {0, 1, 0}, 
+        {1, 0, 1}, 
+        {0, 1, 0} }; // O grafo tem 3 vértices
 
     // Imprime o grafo
     for (int i = 0; i < 3; i++) {
