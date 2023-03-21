@@ -1,7 +1,7 @@
 # Makefile: A standard Makefile for main.c
 
 #CPPFLAGS = -I/usr/include/libxml2
-LDLIBS = -lm
+#LDLIBS = -lm
 
 all  : main
 clean:
