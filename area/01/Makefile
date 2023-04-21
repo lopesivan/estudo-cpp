@@ -1,6 +1,6 @@
 # Makefile: A standard Makefile for main.c
 
-#CPPFLAGS = -I/usr/include/libxml2
+CPPFLAGS = -std=c++2b
 #LDLIBS = -lm
 
 all  : main
