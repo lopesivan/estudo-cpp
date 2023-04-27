@@ -5,7 +5,7 @@ LDLIBS = -lv4l2
 
 all  : main
 run:
-	LD_LIBRARY_PATH=/opt/maple2021/bin.X86_64_LINUX ./main
+	./main
 clean:
 	/bin/rm -rf main main.o
 # END OF FILE
