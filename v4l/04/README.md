@@ -1,9 +1,12 @@
+Revisando o código, percebi que esqueci de enquadrar o buffer antes de iniciar a captura. Vamos corrigir o problema adicionando o seguinte trecho antes de iniciar a captura:
 
-Este exemplo captura vídeo em resolução de 640x480 pixels no formato YUYV e salva o vídeo em um arquivo chamado `output_video.raw`. O vídeo capturado é salvo no formato YUYV bruto, portanto, você precisa converter o arquivo para um formato mais comum, como MP4, usando uma ferramenta como o FFmpeg.
-
-Para compilar o código, você pode usar o seguinte comando:
-
-```bash
-gcc video_capture.c -o video_capture
+```
+if (ioctl(fd, VIDIOC_QBUF, &buf) < 0) {
+    perror("Cannot enqueue buffer");
+    close(outputFile);
+    munmap(buffer, buf.length);
+    close(fd);
+    return 1;
+}
 ```
 
