@@ -45,17 +45,18 @@ public:
         return t.area();
     }
 
-    // Sobrecarga do operador + para somar áreas
-    double operator+(double const& a, double const& b) const {
-        return a + b;
-    }
-
-    // Sobrecarga do operador + para somar áreas de objetos que têm função área
-    template <HasArea T, HasArea U>
-    double operator+(T const& t, U const& u) const {
-        return t.area() + u.area();
-    }
 };
+
+// Sobrecarga do operador + para somar áreas
+// double operator+(double const& a, double const& b) {
+//     return a + b;
+// }
+
+// Sobrecarga do operador + para somar áreas de objetos que têm função área
+// template <HasArea T, HasArea U>
+// double operator+(T const& t, U const& u) {
+//     return t.area() + u.area();
+// }
 
 int main() {
     // Criando objetos de retângulo e círculo
@@ -72,6 +73,7 @@ int main() {
     // Somando as áreas do retângulo e do círculo
     double areaTotal = areaRetangulo + areaCirculo;
 
+    double aareaTotal = area(retangulo) + area(circulo);
     // Imprimindo a área total na tela
     cout << "A area total e: " << areaTotal << endl;
 
