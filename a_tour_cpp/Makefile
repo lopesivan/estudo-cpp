@@ -1,0 +1,35 @@
+CC = g++
+LD = $(CC)
+
+INCFLAGS =
+CPPFLAGS = -std=c++2b -c
+LDFLAGS  = -o
+GDBFLAGS = -g
+
+target  := 01_exemplo 02_exemplo 03_exemplo
+
+targets := $(target)
+
+# Compile
+.cpp.o:
+	# compiling: $<
+	$(CC) $(CPPFLAGS) $<
+
+all: $(targets)
+01_exemplo: 01_exemplo.o
+	# Linking: $@
+	$(CC) $(LDFLAGS) $@ $^
+
+02_exemplo: 02_exemplo.o
+	# Linking: $@
+	$(CC) $(LDFLAGS) $@ $^
+
+03_exemplo: 03_exemplo.o
+	# Linking: $@
+	$(CC) $(LDFLAGS) $@ $^
+
+clean:
+	# remove: $(targets) $(addsuffix .o, $(targets))
+	/bin/rm -rf $(targets) $(addsuffix .o, $(targets))
+
+# END OF FILE
