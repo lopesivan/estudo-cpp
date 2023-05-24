@@ -149,3 +149,12 @@ definições.
 declare p as pointer to array 10 of int
 ```
 
+
+Sim, em parâmetros de função, `int vetor[]` e `int *vetor` são equivalentes. 
+
+Em C, quando um vetor é passado como argumento para uma função, ele é tratado como um ponteiro para o primeiro elemento do vetor. Portanto, `int vetor[]` e `int *vetor` são maneiras diferentes de declarar o mesmo parâmetro, indicando que a função espera receber o endereço de memória do primeiro elemento do vetor.
+
+A declaração `int vetor[]` é uma sintaxe especial que pode ser usada para indicar que o parâmetro representa um vetor. No entanto, essa sintaxe é interpretada como um ponteiro para o tipo do elemento do vetor, ou seja, `int *vetor`.
+
+Portanto, tanto `int vetor[]` quanto `int *vetor` permitem que você acesse os elementos do vetor dentro da função utilizando a notação `vetor[i]`. Ambas as formas são comumente usadas e são equivalentes na passagem de vetores como argumentos de função em C.
+
