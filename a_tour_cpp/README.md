@@ -99,3 +99,53 @@ int main() {
 }
 ```
 
+## cdecl
+No Linux, você pode usar o comando `cdecl` para transcrever a
+definição de ponteiros em C. O `cdecl` é uma ferramenta de linha
+de comando que ajuda a traduzir expressões em C ou C++ em inglês
+para declarações em C.
+
+Para instalar o `cdecl` no Ubuntu ou em outras distribuições
+baseadas em Debian, você pode usar o seguinte comando:
+
+```bash
+sudo apt-get install cdecl
+```
+
+Após a instalação do `cdecl`, você pode usá-lo da seguinte
+maneira para transcrever a definição de ponteiros em C:
+
+```bash
+cdecl explain int*
+```
+
+Nesse exemplo, estamos usando o `cdecl` para explicar a
+definição de um ponteiro para `int`, representado por `int*`. O
+comando retornará a tradução em inglês da declaração, explicando
+o significado da definição do ponteiro.
+
+Você pode substituir `int*` pelo tipo de ponteiro desejado para
+obter a transcrição correspondente.
+
+Por exemplo, ao executar `cdecl explain char**`, o comando
+retornará:
+
+```
+declare char as pointer to pointer to char
+```
+
+Isso indica que `char**` é declarado como um ponteiro para um
+ponteiro de `char`.
+
+O `cdecl` é uma ferramenta útil para auxiliar na interpretação e
+compreensão de definições de ponteiros em C e pode ser uma opção
+conveniente para verificar a sintaxe e a semântica dessas
+definições.
+
+
+
+```
+ I  cdecl> explain int (*p)[10]
+declare p as pointer to array 10 of int
+```
+
