@@ -6,7 +6,7 @@ CPPFLAGS = -std=c++2b -c
 LDFLAGS  = -o
 GDBFLAGS = -g
 
-target  := 01_exemplo 02_exemplo 03_exemplo 04_exemplo 05_exemplo 06_exemplo 07_exemplo
+target  := 01_exemplo 02_exemplo 03_exemplo 04_exemplo 05_exemplo 06_exemplo 07_exemplo 08_exemplo
 
 targets := $(target)
 
@@ -35,6 +35,9 @@ all: $(targets)
 	# Linking: $@
 	$(CC) $(LDFLAGS) $@ $^
 07_exemplo: 07_exemplo.o
+	# Linking: $@
+	$(CC) $(LDFLAGS) $@ $^
+08_exemplo: 08_exemplo.o
 	# Linking: $@
 	$(CC) $(LDFLAGS) $@ $^
 
