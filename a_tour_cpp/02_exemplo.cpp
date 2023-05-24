@@ -21,5 +21,19 @@ int main()
 
     vector<int> v {1, 2, 3, 4, 5, 6}; // a vector of ints
 
+    for (auto x: v)
+    {
+        std::cout << x << std::endl;
+    }
+
+    for (auto x:
+            {
+                11, 22, 33, 44, 55
+            })
+    {
+        std::cout << x << std::endl;
+    }
+
+
     return 0; // success return
 }
