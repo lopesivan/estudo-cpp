@@ -158,3 +158,34 @@ A declaração `int vetor[]` é uma sintaxe especial que pode ser usada para ind
 
 Portanto, tanto `int vetor[]` quanto `int *vetor` permitem que você acesse os elementos do vetor dentro da função utilizando a notação `vetor[i]`. Ambas as formas são comumente usadas e são equivalentes na passagem de vetores como argumentos de função em C.
 
+
+Na declaração `int *vetor[10]`, a sintaxe está um pouco equivocada. Essa declaração cria um vetor de ponteiros para inteiros com capacidade para 10 elementos. Cada elemento desse vetor é um ponteiro para um inteiro.
+
+No entanto, é importante mencionar que essa declaração não cria um vetor de tamanho fixo, mas sim um vetor de ponteiros. Cada elemento do vetor de ponteiros pode apontar para um inteiro em uma posição de memória diferente.
+
+Aqui está um exemplo para ilustrar a declaração e uso desse vetor de ponteiros:
+
+```c
+#include <stdio.h>
+
+int main() {
+    int a = 1, b = 2, c = 3, d = 4, e = 5, f = 6, g = 7, h = 8, i = 9, j = 10;
+    int *vetor[10] = {&a, &b, &c, &d, &e, &f, &g, &h, &i, &j};
+
+    for (int i = 0; i < 10; i++) {
+        printf("%d ", *(vetor[i]));
+    }
+    printf("\n");
+
+    return 0;
+}
+```
+
+Nesse exemplo, temos um vetor de ponteiros `vetor` com capacidade para 10 elementos. Cada elemento do vetor é inicializado com o endereço de uma variável inteira diferente (`a`, `b`, `c`, etc.). O operador `&` é usado para obter o endereço das variáveis.
+
+Dentro do loop `for`, percorremos o vetor de ponteiros e utilizamos o operador `*` para acessar o valor apontado por cada ponteiro. Em seguida, imprimimos esse valor.
+
+A saída será: `1 2 3 4 5 6 7 8 9 10`, que são os valores das variáveis `a`, `b`, `c`, etc.
+
+Portanto, a declaração `int *vetor[10]` cria um vetor de ponteiros para inteiros, onde cada elemento pode apontar para um inteiro em uma posição de memória diferente.
+
