@@ -33,19 +33,10 @@ int main()
     {
         std::cout << x << std::endl;
     }
+    const int s1 = sum (v); // OK: sum(v) is evaluated at run time
 
-    std::cout << sum (v) << std::endl;
+    // constexpr int s2 = sum (v); // error: sum(v) is not a constant expression
+    std::cout << s1 << std::endl;
 
-    for (auto x: v)
-    {
-        std::cout << x << std::endl;
-    }
-
-    inc (v);
-
-    for (auto x: v)
-    {
-        std::cout << x << std::endl;
-    }
     return 0; // success return
 }
