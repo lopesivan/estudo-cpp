@@ -1,3 +1,4 @@
+```{bash}
  $ nm -D /opt/maple2021/bin.X86_64_LINUX/libmaple.so
 nm: libLLVM.so.19.0: cannot open shared object file: No such file or directory
 
@@ -524,3 +525,187 @@ nm: libLLVM.so.19.0: cannot open shared object file: No such file or directory
                  U _ZN13MapleWorkbook5Maple7openURIEP18_MKernelVectorDescPPPl
                  U _ZN13MapleWorkbook5Maple9marchListEP18_MKernelVectorDescPvl
                  U _ZN13MapleWorkbook5Maple9uriExistsEP18_MKernelVectorDescPPPl
+```
+
+## As funções presentes no arquivo `libmaple.so` que você listou podem ser agrupadas em várias categorias baseadas em suas funcionalidades:
+
+1. **Funções Matemáticas**: `sin`, `cos`, `tan`, `exp`, `log`, `sqrt`, `pow`, `ceil`, `floor`, `abs`, `fmod`, etc.
+2. **Operações de String e Conversão**: `strcpy`, `strcat`, `strlen`, `strcmp`, `strtod`, `strtol`, etc.
+3. **Funções de Gerenciamento de Memória**: `malloc`, `free`, `memcpy`, `memset`, etc.
+4. **Funções de Manipulação de Arquivos e Diretórios**: `fopen`, `fclose`, `fwrite`, `fread`, `mkdir`, `rmdir`, etc.
+5. **Funções de Rede e Comunicação**: `socket`, `bind`, `connect`, `listen`, `accept`, `send`, `recv`, etc.
+6. **Funções de Tratamento de Erros e Exceções**: `perror`, `errno`, `exit`, `abort`, etc.
+7. **Funções de Controle de Processo e Thread**: `fork`, `exec`, `pthread_create`, `pthread_join`, etc.
+8. **Funções de Controle de Tempo**: `sleep`, `usleep`, `nanosleep`, `time`, `gettimeofday`, etc.
+9. **Funções Específicas de Maple**: `MapleEvaluate`, `MapleException`, `InitMaple`, etc.
+
+Essas funções cobrem uma ampla gama de operações, desde operações matemáticas básicas e manipulação de strings até gerenciamento de memória, arquivos, e comunicações de rede, demonstrando a complexidade e a abrangência das bibliotecas usadas pelo Maple.
+
+Aqui estão alguns exemplos de como você pode definir ponteiros para funções em C, para algumas das funções matemáticas disponíveis no arquivo `libmaple.so`, baseado no modelo que você mencionou:
+
+```c
+// Definição de ponteiros para funções matemáticas
+double (*sin_func)(double) = dlsym(handle, "hfu_sin");
+double (*cos_func)(double) = dlsym(handle, "hfu_cos");
+double (*tan_func)(double) = dlsym(handle, "hfu_tan");
+double (*log_func)(double) = dlsym(handle, "hfu_log");
+double (*exp_func)(double) = dlsym(handle, "hfu_exp");
+double (*pow_func)(double, double) = dlsym(handle, "hfb_POW");
+double (*abs_func)(double) = dlsym(handle, "hfu_abs");
+double (*ceil_func)(double) = dlsym(handle, "hfu_ceil");
+double (*floor_func)(double) = dlsym(handle, "hfu_floor");
+```
+
+Certifique-se de que os nomes das funções usados com `dlsym` correspondem exatamente aos símbolos disponíveis na biblioteca que você está utilizando.
+
+Claro, aqui estão definições para outros tipos de funções com base nos símbolos que você listou:
+
+```c
+// Definições de ponteiros para outras funções matemáticas e específicas
+double (*acos_func)(double) = dlsym(handle, "hfu_arccos");
+double (*atan_func)(double) = dlsym(handle, "hfu_arctan");
+double (*cosh_func)(double) = dlsym(handle, "hfu_cosh");
+double (*sinh_func)(double) = dlsym(handle, "hfu_sinh");
+double (*tanh_func)(double) = dlsym(handle, "hfu_tanh");
+double (*fmod_func)(double, double) = dlsym(handle, "hfb_MOD");
+double (*round_func)(double) = dlsym(handle, "hfb_round");
+double (*log10_func)(double) = dlsym(handle, "hfu_log10");
+double (*erf_func)(double) = dlsym(handle, "hfu_erf");  // Assume `hfu_erf` as hypothetical symbol for the error function
+
+// Funções de Bessel (caso disponíveis no seu arquivo)
+double (*besselJ_func)(double, double) = dlsym(handle, "hfb_BesselJ");
+double (*besselY_func)(double, double) = dlsym(handle, "hfb_BesselY");
+```
+
+Lembre-se de que os nomes das funções (como `hfu_sin`, `hfu_cos`) devem corresponder exatamente aos símbolos que estão disponíveis na biblioteca, e você deve garantir que `handle` seja um ponteiro válido para a biblioteca dinâmica aberta com `dlopen`.
+
+Aqui estão mais algumas definições de ponteiros para funções com base nos símbolos listados, cobrindo um espectro mais amplo das funções disponíveis:
+
+```c
+// Funções trigonométricas inversas e hiperbólicas
+double (*asin_func)(double) = dlsym(handle, "hfu_arcsin");
+double (*atanh_func)(double) = dlsym(handle, "hfu_arctanh");
+double (*acosh_func)(double) = dlsym(handle, "hfu_arccosh");
+
+// Funções relacionadas a complexos e outros cálculos
+double (*csc_func)(double) = dlsym(handle, "hfu_csc");
+double (*sec_func)(double) = dlsym(handle, "hfu_sec");
+double (*cot_func)(double) = dlsym(handle, "hfu_cot");
+double (*frac_func)(double) = dlsym(handle, "hfu_frac");
+double (*gamma_func)(double) = dlsym(handle, "hfu_GAMMA");
+double (*lambertW_func)(double) = dlsym(handle, "hfu_LambertW");
+
+// Funções específicas de Bessel e outras funções especiais
+double (*airyAi_func)(double) = dlsym(handle, "hfb_AiryAi");
+double (*airyBi_func)(double) = dlsym(handle, "hfb_AiryBi");
+double (*hankelH1_func)(double, double) = dlsym(handle, "hfb_HankelH1");
+double (*hankelH2_func)(double, double) = dlsym(handle, "hfb_HankelH2");
+
+// Assegure-se de que cada função esteja corretamente ligada verificando o retorno de dlsym
+```
+
+Esses ponteiros para funções permitem que você chame essas funções matemáticas complexas e específicas diretamente de seu código C, após carregar a biblioteca dinâmica com `dlopen`. Lembre-se de checar se o retorno de `dlsym` é diferente de `NULL` para verificar se a função foi corretamente ligada.
+
+Ainda não! Aqui estão mais definições para alguns outros tipos de funções com base nos símbolos que você listou:
+
+```c
+// Operações de ponto flutuante
+double (*fpu_add_func)(double, double) = dlsym(handle, "FloatAdd");
+double (*trunc_func)(double) = dlsym(handle, "hfu_trunc");
+double (*signum_func)(double) = dlsym(handle, "hfu_signum");
+
+// Funções específicas do ambiente de execução
+int (*maple_eval_func)(const char*) = dlsym(handle, "MapleEvaluate");
+void (*maple_exception_func)(const char*) = dlsym(handle, "MapleException");
+void (*initialize_maple_func)(const char*) = dlsym(handle, "InitMaple");
+
+// Gerenciamento de strings e arquivos
+char* (*new_long_string_func)(const char*) = dlsym(handle, "NewLongString");
+void (*close_main_socket_func)(void) = dlsym(handle, "CloseMainSocket");
+
+// Certifique-se de incluir verificações de erro após cada chamada dlsym para garantir que as funções foram carregadas corretamente.
+```
+
+Esses ponteiros cobrem uma variedade de operações matemáticas, gerenciamento de erros e funções específicas do Maple. É importante verificar se as funções estão carregadas corretamente após cada chamada ao `dlsym`.
+
+Sim, ainda temos mais algumas funções que podem ser mapeadas:
+
+```c
+// Funções de tratamento de erros
+void (*set_error_handler_func)(void (*handler)(const char*)) = dlsym(handle, "SetErrorHandler");
+
+// Operações de I/O e arquivos
+int (*open_file_func)(const char*, int, int) = dlsym(handle, "open");
+void (*close_file_func)(int) = dlsym(handle, "close");
+
+// Funções de controle de processo e ambiente
+int (*get_process_id_func)(void) = dlsym(handle, "getpid");
+void (*exit_process_func)(int) = dlsym(handle, "exit");
+char* (*get_environment_variable_func)(const char*) = dlsym(handle, "getenv");
+
+// Funções de tratamento de rede
+int (*socket_create_func)(int, int, int) = dlsym(handle, "socket");
+int (*socket_bind_func)(int, const struct sockaddr*, socklen_t) = dlsym(handle, "bind");
+```
+
+Esses ponteiros para funções oferecem acesso a funcionalidades variadas como entrada/saída de arquivos, controle de processos e operações de rede. Certifique-se de verificar se as funções são carregadas com sucesso verificando se o retorno de `dlsym` não é `NULL`.
+
+Sim, existem mais funções que podem ser úteis dependendo do que você precisa fazer. Aqui estão alguns exemplos adicionais que cobrem várias funcionalidades:
+
+```c
+// Funções de matemática avançada e especial
+double (*lambertW_func)(double, int) = dlsym(handle, "hfb_LambertW");
+double (*gamma_func)(double) = dlsym(handle, "hfb_GAMMA");
+
+// Funções de controle de tempo e desempenho
+int (*set_timer_func)(int, const struct itimerval*, struct itimerval*) = dlsym(handle, "setitimer");
+double (*get_time_of_day_func)(void) = dlsym(handle, "gettimeofday");
+
+// Funções para tratamento e manipulação de strings
+int (*compare_strings_func)(const char*, const char*) = dlsym(handle, "strcmp");
+char* (*copy_string_func)(char*, const char*) = dlsym(handle, "strcpy");
+
+// Verificações de erro e retorno
+// Certifique-se de incluir verificações de retorno após cada chamada a dlsym para garantir que as funções foram carregadas corretamente.
+```
+
+Essas são algumas das funções adicionais que você pode usar, dependendo das necessidades específicas do seu projeto. Cada uma dessas funções requer uma verificação após o uso de `dlsym` para assegurar que elas foram carregadas com sucesso.
+
+Aqui estão as definições de ponteiros para funções restantes baseadas em sua lista, cobrindo uma ampla gama de funcionalidades:
+
+```c
+// Tratamento de diretórios e sistema de arquivos
+int (*change_directory_func)(const char*) = dlsym(handle, "chdir");
+int (*make_directory_func)(const char*, mode_t) = dlsym(handle, "mkdir");
+
+// Gerenciamento de processos
+int (*fork_process_func)(void) = dlsym(handle, "fork");
+int (*wait_for_child_func)(int*) = dlsym(handle, "wait");
+
+// Funções de rede adicionais
+int (*accept_connection_func)(int, struct sockaddr*, socklen_t*) = dlsym(handle, "accept");
+int (*connect_to_network_func)(int, const struct sockaddr*, socklen_t) = dlsym(handle, "connect");
+
+// Operações com data e hora
+time_t (*convert_time_to_local_func)(const time_t*) = dlsym(handle, "localtime");
+char* (*format_date_string_func)(char*, size_t, const char*, const struct tm*) = dlsym(handle, "strftime");
+
+// Funções de manipulação de ambiente
+int (*set_environment_variable_func)(const char*, const char*, int) = dlsym(handle, "setenv");
+int (*unset_environment_variable_func)(const char*) = dlsym(handle, "unsetenv");
+
+// Gerenciamento de memória e arquivos
+void* (*map_memory_func)(void*, size_t, int, int, int, off_t) = dlsym(handle, "mmap");
+int (*unmap_memory_func)(void*, size_t) = dlsym(handle, "munmap");
+
+// Tratamento de sinais
+int (*register_signal_handler_func)(int, const struct sigaction*, struct sigaction*) = dlsym(handle, "sigaction");
+
+// Comunicação interprocessual
+int (*send_message_func)(int, const void*, size_t, int) = dlsym(handle, "send");
+ssize_t (*receive_message_func)(int, void*, size_t, int) = dlsym(handle, "recv");
+
+// Verificações de retorno devem ser incluídas após cada chamada a dlsym.
+```
+
+Esses ponteiros cobrem funcionalidades desde gerenciamento de diretórios e arquivos, manipulação de processos, operações de rede, até tratamento de data e hora, manipulação de ambiente, gerenciamento de memória e sinais. É essencial verificar o retorno de `dlsym` para cada função para assegurar que a função foi carregada com sucesso e está pronta para ser utilizada.
