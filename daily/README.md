@@ -76,3 +76,78 @@ int main() {
 A inicialização através de lista (`{}`) também é suportada em C++17 para objetos de estruturas, tornando a inicialização mais flexível e segura, evitando conversões implícitas indesejadas.
 
 
+
+Vou modificar os três programas para utilizar a inicialização com listas (`{}`), conforme a sintaxe disponível em C++17. Essa forma de inicialização é mais segura porque evita conversões implícitas indesejadas.
+
+### Programa `Carro` com inicialização por lista
+```cpp
+#include <iostream>
+
+struct Carro {
+    Carro(float v) : v(v) {}
+    float v;
+};
+
+int main(int argc, char *argv[]) {
+    // Usando inicialização com lista para o objeto `carro`
+    Carro carro{300};
+
+    std::cout << carro.v << '\n';
+    return 0;
+}
+```
+
+### Programa `HelloWorld` com `std::string` e inicialização por lista
+```cpp
+#include <iostream>
+#include <string>
+
+struct HelloWorld {
+    std::string mensagem;
+
+    HelloWorld(std::string mensagem) : mensagem(mensagem) {}
+
+    void show() const {
+        std::cout << "mensagem: " << mensagem << std::endl;
+    }
+};
+
+int main() {
+    // Usando inicialização com lista para o objeto `hw`
+    HelloWorld hw{"Olá, Mundo!"};
+    hw.show();
+
+    return 0;
+}
+```
+
+### Programa `HelloWorld` com suporte para `const char*` e inicialização por lista
+```cpp
+#include <iostream>
+#include <string>
+
+struct HelloWorld {
+    std::string mensagem;
+
+    // Construtores para `std::string` e `const char*`
+    HelloWorld(std::string mensagem) : mensagem(mensagem) {}
+    HelloWorld(const char* mensagem) : mensagem(mensagem) {}
+
+    void show() const {
+        std::cout << "mensagem: " << mensagem << std::endl;
+    }
+};
+
+int main() {
+    // Usando inicialização com lista para o objeto `hw`
+    HelloWorld hw{"Olá, Mundo!"};
+    hw.show();
+
+    return 0;
+}
+```
+
+**Notas:**
+- A inicialização por lista evita chamadas de conversão implícita indesejadas e pode ser uma forma mais clara de inicializar objetos.
+- A sintaxe `{}` também é útil para inicializar agregados, como arrays ou outras coleções.
+
