@@ -1,0 +1,15 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-I/usr/include/Box2D",
+      "-o",
+      "main",
+      "main.cpp"
+    ],
+    "directory": "/workspace/estudo-cpp/box2d/05",
+    "file": "/workspace/estudo-cpp/box2d/05/main.cpp",
+    "output": "/workspace/estudo-cpp/box2d/05/main"
+  }
+]
