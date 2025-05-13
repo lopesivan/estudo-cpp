@@ -1,0 +1,32 @@
+[
+  {
+    "arguments": [
+      "/bin/g++",
+      "-c",
+      "-Wdate-time",
+      "-D_FORTIFY_SOURCE=3",
+      "-fPIC",
+      "-I/usr/include/octave-8.4.0/octave/..",
+      "-I/usr/include/octave-8.4.0/octave",
+      "-pthread",
+      "-fopenmp",
+      "-g",
+      "-O2",
+      "-fno-omit-frame-pointer",
+      "-mno-omit-leaf-frame-pointer",
+      "-flto=auto",
+      "-ffat-lto-objects",
+      "-fstack-protector-strong",
+      "-fstack-clash-protection",
+      "-Wformat",
+      "-Werror=format-security",
+      "-fcf-protection",
+      "-o",
+      "det3x3.o",
+      "det3x3.cpp"
+    ],
+    "directory": "/workspace/estudo-cpp/octave/03",
+    "file": "/workspace/estudo-cpp/octave/03/det3x3.cpp",
+    "output": "/workspace/estudo-cpp/octave/03/det3x3.o"
+  }
+]

@@ -1,5 +1,9 @@
 #include <octave/oct.h>
 #include <octave/Matrix.h>
+#include <iostream>
+
+using namespace std;
+
 
 DEFUN_DLD (det3x3, args, nargout, "Calcula o determinante de uma matriz 3x3")
 {
@@ -19,6 +23,8 @@ DEFUN_DLD (det3x3, args, nargout, "Calcula o determinante de uma matriz 3x3")
         error ("det3x3: a matriz deve ser 3x3.");
         return octave_value_list();
     }
+
+    std::cout << "Eu sou um Módulo C++!" << std::endl;
 
     // Calcula o determinante manualmente (regra de Sarrus)
     double det =
