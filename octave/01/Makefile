@@ -5,8 +5,13 @@
 
 all  : meucodigo.oct
 
-meucodigo.oct:meucodigo.cpp
+meucodigo.oct: meucodigo.cpp
 	mkoctfile -v meucodigo.cpp
+
 clean:
-	/bin/rm -rf meucodigo.oct 
+	/bin/rm -rf meucodigo.oct
+
+run: meucodigo.oct
+	octave usage.oc
+
 # END OF FILE

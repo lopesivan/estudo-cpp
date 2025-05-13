@@ -1,0 +1,6 @@
+% usage.oc - usage
+% Maintainer: Ivan Lopes
+
+autoload('minha_funcao', 'meucodigo.oct')
+
+minha_funcao(2,3)
