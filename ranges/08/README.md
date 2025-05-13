@@ -1,3 +1,29 @@
+Se você quiser preencher um vetor com valores constantes (ou seja, todos os elementos com o mesmo valor), você pode usar a função std::fill da biblioteca <algorithm>.
+
+Exemplo com std::fill:
+
+std::vector<int> vec(5); // Cria um vetor com 5 elementos
+std::fill(vec.begin(), vec.end(), 42);
+
+Agora, o vetor vec terá:
+
+{42, 42, 42, 42, 42}
+
+Alternativa: usando o construtor do vetor
+
+Você também pode criar diretamente o vetor com valores constantes:
+
+std::vector<int> vec(5, 42);
+
+Isso também resulta em:
+
+{42, 42, 42, 42, 42}
+
+Ambas as formas são válidas, escolha a que se encaixa melhor no seu contexto.
+
+
+
+
 Esse código é um excelente exemplo de **C++ moderno** com uso de:
 
 * `std::ranges` (C++20),
