@@ -1,9 +1,9 @@
 # Nome do módulo (sem extensão)
-MODULE := meucodigo
+MODULE := det3x3
 
 # Diretórios de inclusão do Octave
 OCTAVE_VERSION := 8.4.0
-INCLUDES := -I/usr/include/octave-$(OCTAVE_VERSION)/octave/.. -I/usr/include/octave-$(OCTAVE_VERSION)/octave
+INCLUDES       := -I/usr/include/octave-$(OCTAVE_VERSION)/octave/.. -I/usr/include/octave-$(OCTAVE_VERSION)/octave
 
 # Flags de compilação
 CXX := g++

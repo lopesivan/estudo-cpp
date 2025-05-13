@@ -1,0 +1,7 @@
+% usage.oc - usage
+% Maintainer: Ivan Lopes
+
+autoload('det3x3', 'det3x3.oct')
+
+A = [1 2 3; 0 1 4; 5 6 0];
+det3x3(A)
