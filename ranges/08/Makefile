@@ -3,10 +3,7 @@
 CPPFLAGS = -std=c++2b
 #LDLIBS = -lm
 
-all  : main a.out
+all  : main
 clean:
-	/bin/rm -rf main main.o a.out
-
-a.out:
-	g++ matriz.cpp
+	/bin/rm -rf main main.o
 # END OF FILE

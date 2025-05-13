@@ -1,32 +1,30 @@
-#include <algorithm>
 #include <iostream>
-#include <iterator>
-#include <numeric>
-#include <vector>
+#include <ranges>
+#include <array>
 
 int main()
 {
-    std::vector<int> source(10);
-    std::iota(source.begin(), source.end(), 0);
+    int matriz[3][3] =
+    {
+        {1, 2, 3},
+        {4, 5, 6},
+        {7, 8, 9}
+    };
 
-    std::vector<int> destination;
+    // std::array<std::array<int, 3>, 3> matriz_std;
 
-    std::ranges::copy(source.begin(), source.end(),
-                      std::back_inserter(destination));
-// or, alternatively,
-//  std::vector<int> destination(source.size());
-//  std::ranges::copy(source.begin(), source.end(), destination.begin());
-// either way is equivalent to
-//  std::vector<int> destination = source;
+    // for (int i = 0; i < 3; ++i)
+    //     for (int j = 0; j < 3; ++j)
+    //         matriz_std[i][j] = matriz[i][j];
 
-    std::cout << "destination contains: ";
-
-    std::ranges::copy(destination, std::ostream_iterator<int>(std::cout, " "));
-    std::cout << '\n';
-
-    std::cout << "odd numbers in destination are: ";
-
-    std::ranges::copy_if(destination, std::ostream_iterator<int>(std::cout, " "),
-                         [](int x) { return (x % 2) == 1; });
-    std::cout << '\n';
+    for (auto& linha : matriz)
+    {
+        auto dobrado = linha | std::views::transform ([] (auto x)
+        {
+            return x * 2;
+        });
+        for (auto x : dobrado)
+            std::cout << x << " ";
+        std::cout << '\n';
+    }
 }
