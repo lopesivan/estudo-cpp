@@ -1,124 +1,89 @@
-Uma **função em C++ para ser carregada como módulo dinâmico
-no Octave**, usando a API `DEFUN_DLD`. Isso é super útil
-para integrar código de alto desempenho ao Octave.
+Um exemplo completo em C++ que define uma função Octave
+chamada `det3x3`, que calcula o **determinante de uma matriz
+3×3**.
 
 ---
 
-## ✅ Melhorias no código
-
-1. Verificar se os argumentos foram passados corretamente.
-2. Retornar erro legível em caso de entrada inválida.
-3. Usar a convenção `return octave_value_list`.
-
----
-
-### 🔧 Versão aprimorada do `meucodigo.cpp`:
+## ✅ Passo 1: Código C++ (`det3x3.cpp`)
 
 ```cpp
 #include <octave/oct.h>
-#include <octave/ov-struct.h> // caso queira usar dicionários no futuro
+#include <octave/Matrix.h>
 
-DEFUN_DLD(minha_funcao, args, nargout, "Soma dois inteiros: minha_funcao(a, b)")
+DEFUN_DLD(det3x3, args, nargout, "Calcula o determinante de uma matriz 3x3")
 {
-  // Verificar número de argumentos
-  if (args.length() != 2) {
-    error("minha_funcao: você deve passar exatamente 2 argumentos inteiros.");
-    return octave_value_list();
-  }
+    // Verifica se foi passado 1 argumento
+    if (args.length() != 1) {
+        error("det3x3: número incorreto de argumentos. Use: det3x3(matrix)");
+        return octave_value_list();
+    }
 
-  // Tentar extrair os valores inteiros
-  int arg1 = args(0).int_value();
-  int arg2 = args(1).int_value();
+    // Tenta converter o argumento para matriz
+    Matrix A = args (0).matrix_value();
 
-  // Verificar se houve erro na conversão
-  if (error_state) {
-    error("minha_funcao: os argumentos devem ser inteiros.");
-    return octave_value_list();
-  }
+    // Verifica se é 3x3
+    if (A.rows() != 3 || A.columns() != 3) {
+        error("det3x3: a matriz deve ser 3x3.");
+        return octave_value_list();
+    }
 
-  // Realiza a soma
-  int resultado = arg1 + arg2;
+    // Calcula o determinante manualmente (regra de Sarrus)
+    double det =
+        A(0,0) * (A(1,1) * A(2,2) - A(1,2) * A(2,1)) -
+        A(0,1) * (A(1,0) * A(2,2) - A(1,2) * A(2,0)) +
+        A(0,2) * (A(1,0) * A(2,1) - A(1,1) * A(2,0));
 
-  // Retorna como valor do Octave
-  octave_value_list retorno;
-  retorno(0) = resultado;
-  return retorno;
+    return octave_value(det);
 }
 ```
 
 ---
 
-## ✅ Como compilar e carregar no Octave
+## ✅ Passo 2: Compilar com `mkoctfile`
 
-### 🧱 1. Compile com `mkoctfile`
-
-```bash
-mkoctfile --verbose meucodigo.cpp
-```
-
-Isso vai gerar um arquivo chamado:
-
-```
-minha_funcao.oct
-```
-
-(O mesmo nome da função passada para `DEFUN_DLD`.)
-
----
-
-### 📥 2. Carregue no Octave
-
-1. Inicie o Octave no mesmo diretório do `.oct`:
+No terminal:
 
 ```bash
-octave
+mkoctfile det3x3.cpp
 ```
 
-2. Use sua função:
+Isso criará um arquivo `det3x3.oct`.
+
+---
+
+## ✅ Passo 3: Usar no Octave
+
+Abra o Octave no mesmo diretório:
 
 ```octave
-minha_funcao(3, 5)
+A = [1 2 3; 0 1 4; 5 6 0];
+det3x3(A)
 ```
 
-**Saída esperada:**
-
-```
-ans = 8
-```
-
----
-
-### 🧪 Testes e exemplos
+### Resultado esperado:
 
 ```octave
-minha_funcao(10, -4)  % deve retornar 6
-minha_funcao("a", 2)  % deve mostrar erro de tipo
-minha_funcao(1)       % erro por número de argumentos
+ans = 1
 ```
 
 ---
 
-## ✅ Dica: colocar o `.oct` em um path acessível
+## ✅ Verificações implementadas:
 
-Você pode colocar o `.oct` em um diretório como `~/octave/`, e no Octave fazer:
+* Verifica se a matriz passada tem tamanho 3×3.
+* Usa a **fórmula direta do determinante** para melhor desempenho.
+* Mostra mensagens de erro se os argumentos forem inválidos.
+
+---
+
+## 🧪 Testes extras no Octave:
 
 ```octave
-addpath("~/octave");
+det3x3(rand(3))        % válido
+det3x3(rand(4))        % erro: não é 3x3
+det3x3("teste")        % erro: não é matriz
+det3x3()               % erro: sem argumentos
 ```
 
-Ou adicionar isso no `~/.octaverc` para carregar sempre.
-
 ---
-
-## 📦 Resumo
-
-| Ação                           | Comando                   |
-| ------------------------------ | ------------------------- |
-| Compilar                       | `mkoctfile meucodigo.cpp` |
-| Usar no Octave                 | `minha_funcao(2, 3)`      |
-| Ver erro se argumentos errados | `minha_funcao(1)`         |
-
----
-
-Se quiser fazer funções com vetores/matrizes de entrada, ou retornar múltiplos valores, posso te mostrar também. Deseja isso?
 
