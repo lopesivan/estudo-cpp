@@ -10,7 +10,7 @@ all  : main
 clean:
 	/bin/rm -rf main main.o
 
-run:
+run: main
 	LD_LIBRARY_PATH=$(GLUT_LIBS)/lib ./main
 
 # END OF FILE
