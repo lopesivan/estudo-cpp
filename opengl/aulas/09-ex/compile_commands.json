@@ -1,0 +1,15 @@
+[
+  {
+    "arguments": [
+      "/bin/g++",
+      "-c",
+      "-I/home/linuxbrew/.linuxbrew/Cellar/freeglut/3.6.0/include",
+      "-o",
+      "main",
+      "main.cpp"
+    ],
+    "directory": "/workspace/estudo-cpp/opengl/aulas/09-ex",
+    "file": "/workspace/estudo-cpp/opengl/aulas/09-ex/main.cpp",
+    "output": "/workspace/estudo-cpp/opengl/aulas/09-ex/main"
+  }
+]
