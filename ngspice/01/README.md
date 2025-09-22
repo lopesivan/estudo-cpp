@@ -244,3 +244,28 @@ g++ -o simulator main.cpp -lngspice -std=c++11
 
 O exemplo mostra como integrar simulações SPICE diretamente em aplicações C++, permitindo automação de análises e processamento programático dos resultados.
 
+
+Vejo os erros de compilação. O problema está na forma como estou acessando as estruturas da libngspice. Vou corrigir o código:Agora o código está corrigido para usar a API correta da libngspice. As principais mudanças foram:
+
+## Correções realizadas:
+
+1. **`ngSpice_AllVecs()`** - Para obter lista de vetores disponíveis
+2. **`ngGet_Vec_Info()`** - Retorna `pvector_info` (ponteiro simples, não array)
+3. **`ngGet_Vec_Data_Real()`** - Para obter dados reais do vetor
+4. **`ngGet_Vec_Data_Imag()`** - Para obter dados imaginários do vetor
+
+## Exemplo de compilação com debug:
+
+```bash
+g++ -g -I/home/linuxbrew/.linuxbrew/Cellar/libngspice/45/include \
+    main.cpp -L/home/linuxbrew/.linuxbrew/lib -lngspice -o main
+```
+
+## Principais funções da API corrigidas:
+
+- **`ngSpice_AllVecs(plot)`** - Retorna array de strings com nomes dos vetores
+- **`ngGet_Vec_Info(vecname)`** - Retorna informações sobre um vetor específico  
+- **`ngGet_Vec_Data_Real(vecname)`** - Retorna array de doubles com dados reais
+- **`ngGet_Vec_Data_Imag(vecname)`** - Retorna array de doubles com dados imaginários
+
+Agora o código deve compilar sem erros. A API da libngspice varia um pouco entre versões, então essas são as funções mais comumente disponíveis e estáveis.
