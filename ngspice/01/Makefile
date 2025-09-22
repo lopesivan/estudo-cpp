@@ -1,14 +1,13 @@
 # Makefile: A standard Makefile for main.c
 
-#CPPFLAGS = -I/usr/include/libxml2
-LDLIBS = -ldl
+CPPFLAGS = -I/home/linuxbrew/.linuxbrew/Cellar/libngspice/45/include
+LDLIBS   = -L/home/linuxbrew/.linuxbrew/lib -lngspice
 
 all  : main
+
+run: export LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/lib
 run:
-	LD_LIBRARY_PATH=/opt/maple2021/bin.X86_64_LINUX ./main
+	./main
 clean:
 	/bin/rm -rf main main.o
 # END OF FILE
-run: export LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/lib
-run: export PYENV_VERSION=spice
-run:
