@@ -40,7 +40,7 @@ if(NOT yaml-cpp_FOUND)
     execute_process(
       COMMAND
         ${GIT_EXECUTABLE} clone --depth 1 # Clone raso (mais rápido)
-        --branch yaml-cpp-0.8.0 # Versão específica (opcional)
+        # --branch new-api # Versão específica (opcional)
         https://github.com/jbeder/yaml-cpp.git ${YAML_CPP_DIR}
       RESULT_VARIABLE GIT_RESULT
       ERROR_VARIABLE GIT_ERROR)
