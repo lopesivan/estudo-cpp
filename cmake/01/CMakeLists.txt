@@ -71,4 +71,7 @@ endif()
 # Vincula a biblioteca ao executável
 target_link_libraries(welcome PRIVATE yaml-cpp::yaml-cpp)
 
+include(CMakePrintHelpers)
+cmake_print_properties(TARGETS yaml-cpp PROPERTIES TYPE SOURCE_DIR)
+
 # eof
