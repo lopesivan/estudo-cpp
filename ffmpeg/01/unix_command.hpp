@@ -21,10 +21,10 @@ concept StringOutputIterator =
 // --------------------------------------------------
 class UnixCommand
 {
-  public:
-    UnixCommand(std::string              program,
-                std::vector<std::string> args = {})
-        : program_(std::move(program)), args_(std::move(args))
+public:
+    UnixCommand (std::string              program,
+                 std::vector<std::string> args = {})
+        : program_ (std::move (program)), args_ (std::move (args))
     {
     }
 
@@ -37,10 +37,10 @@ class UnixCommand
         return args_;
     }
 
-    template <StringOutputIterator Out> void to_args(Out out) const
+    template <StringOutputIterator Out> void to_args (Out out) const
     {
         *out++ = program_;
-        for(const auto& arg : args_)
+        for (const auto& arg : args_)
         {
             *out++ = arg;
         }
@@ -49,21 +49,21 @@ class UnixCommand
     std::string to_command_line() const
     {
         std::vector<std::string> all;
-        to_args(std::back_inserter(all));
+        to_args (std::back_inserter (all));
 
         std::ostringstream oss;
         bool               first = true;
 
-        for(const auto& arg : all)
+        for (const auto& arg : all)
         {
-            if(!first)
+            if (!first)
             {
                 oss << ' ';
                 // oss << '\n'; // pula linha entre os argumentos
             }
 
             first = false;
-            oss << quote_arg(arg);
+            oss << quote_arg (arg);
         }
 
         return oss.str();
@@ -74,34 +74,33 @@ class UnixCommand
         std::string cmd = to_command_line();
         std::cout << "[UnixCommand] " << cmd << '\n';
 
-        return 1;
-        // return std::system(to_command_line().c_str());
+        return std::system (to_command_line().c_str());
     }
 
-  private:
+private:
     std::string              program_;
     std::vector<std::string> args_;
 
-    static std::string quote_arg(const std::string& arg)
+    static std::string quote_arg (const std::string& arg)
     {
         std::string result;
-        result.reserve(arg.size() + 2);
+        result.reserve (arg.size() + 2);
 
-        result.push_back('\'');
+        result.push_back ('\'');
 
-        for(char c : arg)
+        for (char c : arg)
         {
-            if(c == '\'')
+            if (c == '\'')
             {
                 result += "'\\''";
             }
             else
             {
-                result.push_back(c);
+                result.push_back (c);
             }
         }
 
-        result.push_back('\'');
+        result.push_back ('\'');
 
         return result;
     }
@@ -111,9 +110,9 @@ class UnixCommand
 // 3) Algoritmo genérico auxiliar
 // --------------------------------------------------
 template <StringOutputIterator Out>
-void append_args(Out out, const std::vector<std::string>& args)
+void append_args (Out out, const std::vector<std::string>& args)
 {
-    for(const auto& arg : args)
+    for (const auto& arg : args)
     {
         *out++ = arg;
     }
@@ -124,17 +123,20 @@ void append_args(Out out, const std::vector<std::string>& args)
 // --------------------------------------------------
 template <class Job, class Out>
 concept CommandJob =
-    StringOutputIterator<Out> &&
-    requires(const Job& job, Out out) { make_args(job, out); };
+    StringOutputIterator<Out>&&
+    requires (const Job& job, Out out)
+{
+    make_args (job, out);
+};
 
 // --------------------------------------------------
 // 5) Adaptador genérico: Job -> UnixCommand
 // --------------------------------------------------
 template <class Job>
-UnixCommand make_unix_command(const std::string& program,
-                              const Job&         job)
+UnixCommand make_unix_command (const std::string& program,
+                               const Job&         job)
 {
     std::vector<std::string> args;
-    make_args(job, std::back_inserter(args));
-    return UnixCommand(program, std::move(args));
+    make_args (job, std::back_inserter (args));
+    return UnixCommand (program, std::move (args));
 }
