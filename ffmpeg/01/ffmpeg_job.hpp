@@ -16,6 +16,7 @@
 // -----------------------------------------------------------------------------
 
 #include "unix_command.hpp"
+#include <optional>
 
 // -----------------------------------------------------------------------------
 // Estrutura de dados pura.
@@ -136,7 +137,7 @@ struct FFmpegJob
 //
 // -----------------------------------------------------------------------------
 template <StringOutputIterator Out>
-void make_args (const FFmpegJob& job, Out out)
+void make_args(const FFmpegJob& job, Out out)
 {
 
     // -------------------------------------------------------------------------
@@ -164,7 +165,7 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -c:v libx264
     // -------------------------------------------------------------------------
-    if (job.videoCodec)
+    if(job.videoCodec)
     {
         *out++ = "-c:v";
         *out++ = *job.videoCodec;
@@ -177,10 +178,10 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -b:v 2500k
     // -------------------------------------------------------------------------
-    if (job.videoBitrateK)
+    if(job.videoBitrateK)
     {
         *out++ = "-b:v";
-        *out++ = std::to_string (*job.videoBitrateK) + "k";
+        *out++ = std::to_string(*job.videoBitrateK) + "k";
     }
 
     // -------------------------------------------------------------------------
@@ -190,10 +191,10 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -r 60
     // -------------------------------------------------------------------------
-    if (job.videoFramerate)
+    if(job.videoFramerate)
     {
         *out++ = "-r";
-        *out++ = std::to_string (*job.videoFramerate);
+        *out++ = std::to_string(*job.videoFramerate);
     }
 
     // -------------------------------------------------------------------------
@@ -203,7 +204,7 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -c:a aac
     // -------------------------------------------------------------------------
-    if (job.audioCodec)
+    if(job.audioCodec)
     {
         *out++ = "-c:a";
         *out++ = *job.audioCodec;
@@ -216,10 +217,10 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -b:a 192k
     // -------------------------------------------------------------------------
-    if (job.audioBitrateK)
+    if(job.audioBitrateK)
     {
         *out++ = "-b:a";
-        *out++ = std::to_string (*job.audioBitrateK) + "k";
+        *out++ = std::to_string(*job.audioBitrateK) + "k";
     }
 
     // -------------------------------------------------------------------------
@@ -229,7 +230,7 @@ void make_args (const FFmpegJob& job, Out out)
     //
     //     -f mp4
     // -------------------------------------------------------------------------
-    if (job.format)
+    if(job.format)
     {
         *out++ = "-f";
         *out++ = *job.format;
@@ -245,7 +246,7 @@ void make_args (const FFmpegJob& job, Out out)
     //     "-preset"
     //     "slow"
     // -------------------------------------------------------------------------
-    append_args (out, job.extraArgs);
+    append_args(out, job.extraArgs);
 
     // -------------------------------------------------------------------------
     // Arquivo final de saída.
@@ -276,7 +277,7 @@ void make_args (const FFmpegJob& job, Out out)
 //
 // sem alterar FFmpegJob.
 // -----------------------------------------------------------------------------
-inline UnixCommand make_ffmpeg_command (
+inline UnixCommand make_ffmpeg_command(
     const FFmpegJob& job,
 
     // -------------------------------------------------------------------------
@@ -286,8 +287,7 @@ inline UnixCommand make_ffmpeg_command (
     //     avconv
     //     /usr/local/bin/ffmpeg
     // -------------------------------------------------------------------------
-    const std::string& ffmpegBinary = "ffmpeg"
-)
+    const std::string& ffmpegBinary = "/usr/bin/ffmpeg")
 {
 
     // -------------------------------------------------------------------------
@@ -301,5 +301,5 @@ inline UnixCommand make_ffmpeg_command (
     //
     //     UnixCommand executável
     // -------------------------------------------------------------------------
-    return make_unix_command (ffmpegBinary, job);
+    return make_unix_command(ffmpegBinary, job);
 }
