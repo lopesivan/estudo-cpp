@@ -15,7 +15,7 @@ end
 
 return {
     tasks = {
-        ["cmake -S. -Bbuild"] = {
+        ["cmake -S. -Bbuild -DCMAKE_POLICY_VERSION_MINIMUM=3.5"] = {
             command = function()
                 local build_dir = "build"
 
@@ -24,6 +24,7 @@ return {
                     ".",
                     "-B",
                     build_dir,
+                    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
                 })
             end,
             type = "lua",
