@@ -15,7 +15,14 @@ end
 
 return {
     tasks = {
-        ["cmake -S. -Bbuild -DCMAKE_POLICY_VERSION_MINIMUM=3.5"] = {
+        ["run"] = {
+            command = function()
+                local build_dir = "build"
+                app(build_dir .. "/gl_texture_tutorial", {})
+            end,
+            type = "lua",
+        },
+        ["cmake -S. -Bbuild -DCMAKE_CXX_COMPILER=g++-14 -DCMAKE_POLICY_VERSION_MINIMUM=3.5"] = {
             command = function()
                 local build_dir = "build"
 
@@ -24,6 +31,7 @@ return {
                     ".",
                     "-B",
                     build_dir,
+                    "-DCMAKE_CXX_COMPILER=g++-14",
                     "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
                 })
             end,
