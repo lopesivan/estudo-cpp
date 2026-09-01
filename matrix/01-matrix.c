@@ -59,6 +59,21 @@ int main(void)
                col,
                *(matrix[0] + i));
     }
+
+    // Versão ainda mais rápida (acesso sequencial):
+    printf("%s\n", "--------------------");
+    printf("%s:\n", "Imprimindo a matriz");
+    printf("%s:\n", "Versão ainda mais rápida (acesso sequencial)");
+    printf("%s\n", "--------------------");
+    double* ptr = matrix[0];
+    for(size_t i = 0; i < rows * cols; i++)
+    {
+        printf("%.1f ", *ptr++);
+        if((i + 1) % cols == 0)
+            printf("\n");
+    }
+
+
     free(matrix);
     return 0;
 }
