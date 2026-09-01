@@ -3,7 +3,6 @@
 #include <vector>
 #include <iostream>
 
-using namespace std;
 template <typename T>
 T dotProduct(const std::vector<T>& vec1, const std::vector<T>& vec2)
 {
