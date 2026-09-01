@@ -1,13 +1,12 @@
-// iterator_traits.hpp
 #ifndef ITERATOR_TRAITS_HPP
 #define ITERATOR_TRAITS_HPP
 
 #include <cstddef>
-#include <iterator> // Reusa std::input_iterator_tag, std::random_access_iterator_tag, etc.
+#include <iterator>
 
 namespace custom {
 
-// Usamos as tags standard para ter interoperabilidade total com a STL
+// Reuso de tags standard para compatibilidade total
 using std::input_iterator_tag;
 using std::output_iterator_tag;
 using std::forward_iterator_tag;
@@ -43,6 +42,50 @@ struct iterator_traits<const T*> {
     using reference         = const T&;
     using iterator_category = custom::random_access_iterator_tag;
 };
+
+// --- Implementação do custom::advance ---
+
+template <typename RandomAccessIt>
+void advance_impl(RandomAccessIt &it, int n, random_access_iterator_tag) {
+    it += n;
+}
+
+template <typename InputIt>
+void advance_impl(InputIt &it, int n, input_iterator_tag) {
+    while (n-- > 0) ++it;
+}
+
+template <typename Iterator>
+void advance(Iterator &it, int n) {
+    using Category = typename iterator_traits<Iterator>::iterator_category;
+    advance_impl(it, n, Category{});
+}
+
+// --- Implementação do custom::distance ---
+
+template <typename RandomAccessIt>
+typename iterator_traits<RandomAccessIt>::difference_type
+distance_impl(RandomAccessIt first, RandomAccessIt last, random_access_iterator_tag) {
+    return last - first;
+}
+
+template <typename InputIt>
+typename iterator_traits<InputIt>::difference_type
+distance_impl(InputIt first, InputIt last, input_iterator_tag) {
+    typename iterator_traits<InputIt>::difference_type count = 0;
+    while (first != last) {
+        ++first;
+        ++count;
+    }
+    return count;
+}
+
+template <typename Iterator>
+typename iterator_traits<Iterator>::difference_type
+distance(Iterator first, Iterator last) {
+    using Category = typename iterator_traits<Iterator>::iterator_category;
+    return distance_impl(first, last, Category{});
+}
 
 } // namespace custom
 
