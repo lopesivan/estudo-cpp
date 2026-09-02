@@ -1,0 +1,12 @@
+{
+    "*.cpp": {
+        "type": "cpp",
+        "make": "/home/linuxbrew/.linuxbrew/bin/g++-16 -std=c++2b -O0 -Werror -Wpedantic -o {} {}.cpp"
+    },
+    "./.projections.json": {
+        "type": "dit"
+    },
+    "README.md": {
+        "type": "doc"
+    }
+}
