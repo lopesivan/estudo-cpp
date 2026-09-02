@@ -231,4 +231,6 @@ T dotProduct(const std::vector<T>& vec1, const std::vector<T>& vec2)
 - **Modelo 4**: Recomendado para projetos C++17+ que precisam de performance
 - **Modelo 1**: Apenas para casos muito específicos onde só se trabalha com `int`
 
-**Sugestão final**: Use o **Modelo 4** com a política de execução paralela para máximo desempenho em aplicações que lidam com grandes volumes de dados.
+**Sugestão final**: Use o **Modelo 4** com a política de
+execução paralela para máximo desempenho em aplicações
+que lidam com grandes volumes de dados.
