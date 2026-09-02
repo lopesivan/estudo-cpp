@@ -1,0 +1,17 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-Wall",
+      "-Wno-parentheses",
+      "-std=c++20",
+      "-o",
+      "main",
+      "main.cpp"
+    ],
+    "directory": "/workspace/work/estudo-cpp/matrix/05-matrix",
+    "file": "/workspace/work/estudo-cpp/matrix/05-matrix/main.cpp",
+    "output": "/workspace/work/estudo-cpp/matrix/05-matrix/main"
+  }
+]
