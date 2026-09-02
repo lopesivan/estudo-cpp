@@ -1,111 +1,38 @@
 #include <iostream>
-#include <numeric>
 #include <vector>
 #include <algorithm>
-#include <cstdlib>
-#include <ctime>
 
-// ---------------------------------------------------------------------
-// collision_point (EoP cap.2): tartaruga e lebre.
-// Detecta o ponto onde a orbita de x sob f "colide" (entra em ciclo).
-// ---------------------------------------------------------------------
-template <class X, class F>
-X collision_point(X x, F f)
+namespace eop {
+template <class I, class F>
+F for_each(I first, I last, F f)
 {
-    X slow = x;
-    X fast = x;
-    do
+    while (first != last)
     {
-        slow = f(slow);
-        fast = f(f(fast));
-    } while (slow != fast);
-    return slow;
-}
-
-// ---------------------------------------------------------------------
-// Teste de primalidade simples (trial division) -- suficiente para
-// os fatores intermediarios que aparecem apos o pollard_rho.
-// ---------------------------------------------------------------------
-bool eh_primo(long long n)
-{
-    if (n < 2) return false;
-    if (n % 2 == 0) return n == 2;
-    for (long long p = 3; p * p <= n; p += 2)
-        if (n % p == 0) return false;
-    return true;
-}
-
-// ---------------------------------------------------------------------
-// Pollard's rho: acha UM fator nao trivial de n (nao a fatoracao toda).
-// Usa collision_point sobre f(x) = (x^2 + c) mod n.
-// Retorna n se falhar com esse c (chamador deve tentar outro c).
-// ---------------------------------------------------------------------
-long long pollard_rho(long long n, long long c)
-{
-    if (n % 2 == 0) return 2;
-
-    auto f = [n, c](long long x) { return ((__int128)x * x + c) % n; };
-
-    long long slow = 2, fast = 2, d = 1;
-    while (d == 1)
-    {
-        slow = f(slow);
-        fast = f(f(fast));
-        d = std::gcd(std::abs(slow - fast), n);
+        f(*first);
+        ++first;
     }
-    return d; // pode ser n (falha) ou um fator nao trivial
+    return f; // devolve f (pode carregar estado acumulado)
 }
-
-// ---------------------------------------------------------------------
-// Acha um fator nao trivial de n, tentando varios valores de c
-// caso pollard_rho falhe (retorne n) ou n seja primo.
-// ---------------------------------------------------------------------
-long long achar_fator(long long n)
-{
-    if (n % 2 == 0) return 2;
-    if (eh_primo(n)) return n;
-
-    for (long long c = 1; c < 20; ++c)
-    {
-        long long d = pollard_rho(n, c);
-        if (d != n && d != 1) return d;
-    }
-    return n; // desistiu (nao deveria acontecer para n pequenos/medios)
-}
-
-// ---------------------------------------------------------------------
-// Fatoracao completa: decompoe n recursivamente em primos, usando
-// achar_fator (que por baixo usa collision_point) em cada etapa.
-// ---------------------------------------------------------------------
-void fatorar(long long n, std::vector<long long>& fatores)
-{
-    if (n == 1) return;
-    if (eh_primo(n)) { fatores.push_back(n); return; }
-
-    long long d = achar_fator(n);
-    fatorar(d, fatores);
-    fatorar(n / d, fatores);
 }
 
 int main()
 {
-    std::vector<long long> numeros = { 8051, 58089, 1000003, 999999999989LL };
+    std::vector<int> v{1, 2, 3, 4, 5};
 
-    for (long long n : numeros)
-    {
-        std::vector<long long> fatores;
-        fatorar(n, fatores);
-        std::sort(fatores.begin(), fatores.end());
+    // 1) efeito colateral (imprimir)
+    eop::for_each(v.begin(), v.end(), [](int x) { std::cout << x << ' '; });
+    std::cout << '\n';
 
-        std::cout << n << " = ";
-        long long produto = 1;
-        for (size_t i = 0; i < fatores.size(); ++i)
-        {
-            std::cout << fatores[i];
-            if (i + 1 < fatores.size()) std::cout << " x ";
-            produto *= fatores[i];
-        }
-        std::cout << "   (verificacao: produto = " << produto
-                   << (produto == n ? "  OK" : "  ERRO") << ")\n";
-    }
+    // 2) std::for_each da biblioteca padrao -- mesma ideia
+    std::for_each(v.begin(), v.end(), [](int& x) { x *= 10; });
+    for (int x : v) std::cout << x << ' ';
+    std::cout << '\n';
+
+    // 3) funtor com estado: for_each devolve o funtor final
+    struct Somador {
+        int total = 0;
+        void operator()(int x) { total += x; }
+    };
+    Somador s = eop::for_each(v.begin(), v.end(), Somador{});
+    std::cout << "soma = " << s.total << '\n';
 }
