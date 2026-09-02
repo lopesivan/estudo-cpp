@@ -4,31 +4,43 @@
 #include <vector>
 #include <list>
 
-namespace custom {
+namespace custom
+{
 
 // Versão O(1) para iteradores de Acesso Aleatório
 template <typename Iterator>
-    requires std::derived_from<typename iterator_traits<Iterator>::iterator_category, std::random_access_iterator_tag>
-void advance(Iterator &it, int n) {
+requires std::derived_from<typename iterator_traits<Iterator>::iterator_category, std::random_access_iterator_tag>
+void advance (Iterator& it, int n)
+{
     it += n;
     std::cout << "[C++20 Concept O(1)] Avançou via +=\n";
 }
 
 // Versão O(N) para iteradores genéricos (Forward/Bidirectional)
 template <typename Iterator>
-void advance(Iterator &it, int n) {
+void advance (Iterator& it, int n)
+{
     while (n-- > 0) ++it;
     std::cout << "[C++20 Concept O(N)] Avançou via ++\n";
 }
 
 } // namespace custom
 
-int main() {
+int main()
+{
     std::vector<int> vec = {10, 20, 30, 40, 50};
     auto vec_it = vec.begin();
-    custom::advance(vec_it, 3); // Compila e seleciona a versão O(1)
-
+    custom::advance (vec_it, 3); // Compila e seleciona a versão O(1)
+    std::cout << "vec[3] = " << vec[3] << " = *vec_it = " << *vec_it << std::endl;
     std::list<int> lst = {10, 20, 30, 40, 50};
     auto lst_it = lst.begin();
-    custom::advance(lst_it, 3); // Compila e seleciona a versão O(N)
+    custom::advance (lst_it, 3); // Compila e seleciona a versão O(N)
+    // std::list nao possui operator[], acessamos via dereferência do iterador (*lst_it)
+    std::cout << "*lst_it = " << *lst_it << std::endl;
+
+    // Pega o valor do elemento no índice 3 (valor 40)
+    int valor = *std::next (lst.begin(), 3);
+
+    std::cout << "Elemento no índice 3: " << valor << "\n";
+
 }
