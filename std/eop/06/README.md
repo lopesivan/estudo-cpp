@@ -71,3 +71,41 @@ Mesmo esqueleto de `distance`, mas com propósito diferente: em vez de contar ap
 
 `[first, last)` precisa ser um intervalo válido e alcançável (`last` chegável a partir de `first` incrementando) — mesma exigência estrutural de `distance`, só que aqui a "utilidade" é side-effect ou acumulação via `F`, não contagem.
 
+
+Da função `f(x) = sin(x)`, integrada de `a = 0` até `b = π`:
+
+```cpp
+double f(double x) { return std::sin(x); }
+```
+
+$$\int_0^{\pi} \sin(x)\,dx = [-\cos(x)]_0^{\pi} = -\cos(\pi) - (-\cos(0)) = 1 + 1 = 2$$
+
+Por isso `exata = 2.0` no código — é o valor analítico fechado, usado só para conferir o resultado numérico (`resultado = 2`, erro real `2.45e-08`).
+
+
+Não — é o `std::sin` de verdade, chamado diretamente, sem aproximação nem substituição:
+
+```cpp
+double f(double x) { return std::sin(x); }
+```
+
+E dentro do trapézio:
+```cpp
+[&](double acc, int i) { return acc + fn(a + i * h); }
+```
+
+`fn` aqui é exatamente esse `f`, então cada termo da soma é uma chamada real a `std::sin(x)` (implementação da biblioteca padrão, precisão de máquina) — não é o seno aproximado por ângulo pequeno que fizemos há algumas mensagens atrás.
+
+## Por que a dúvida faz sentido
+
+Nesta conversa apareceram **dois usos diferentes** de seno, e é fácil misturar:
+
+| Exemplo | O que fez com seno |
+|---|---|
+| Cálculo de `sin(θ)` via bisseção + ângulo duplo | **Calculou** o seno do zero, sem usar `std::sin` — só a aproximação `sinθ≈θ` no fundo + fórmula de duplicação subindo |
+| Integral `∫sin(x)dx` de `0` a `π` | **Usa** `std::sin` como função dada, pronta da biblioteca — o alvo aqui é a área sob a curva, não reimplementar o seno |
+
+No exemplo da integral, `sin` é só a função escolhida para testar `trapezoidal_accumulate` (porque tem integral exata conhecida, `= 2`, fácil de verificar). Poderia ser qualquer outra função — `x*x`, `exp(x)`, etc. — o algoritmo de integração não sabe nem se importa que é seno.
+
+Confirmado: `std::sin` bate exatamente com os valores conhecidos (`sin(0)=0`, `sin(π/2)=1`, `sin(π)≈0`, com erro de ponto flutuante `~1.2e-16`, típico da implementação real da libm). Nenhuma descaracterização — é a função trigonométrica padrão, íntegra.
+
