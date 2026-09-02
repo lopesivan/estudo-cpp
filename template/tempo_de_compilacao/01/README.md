@@ -1985,3 +1985,335 @@ template<auto G> constexpr auto cos = std::cos(G * PI / 180.0);
 // Uso: cos<180> retorna -1 em tempo de compilação!
 ```
 
+
+
+Você está absolutamente correto! Essa é uma **limitação fundamental** dos templates em C++. Vou explicar por que isso acontece e como resolver.
+
+## Por que não funciona com `std::cin`?
+
+```cpp
+// ❌ ISSO NÃO COMPILA!
+int N;
+std::cin >> N;
+std::cout << "sin(" << N << "°) = " << sin(Radianos<N>) << '\n';
+```
+
+**Motivo:** Templates são avaliados **em tempo de compilação**. O valor de `N` só é conhecido **em tempo de execução** (quando o usuário digita).
+
+```
+TEMPO DE COMPILAÇÃO: template<auto G> é instanciado com G constante
+                    ↓
+               Radianos<45> → OK!
+               Radianos<N>  → ERRO! N não é constante
+                    ↓
+TEMPO DE EXECUÇÃO:  std::cin >> N;  // N só é conhecido aqui
+```
+
+## Soluções para trabalhar com entrada do usuário
+
+### Solução 1: Função normal (tempo de execução)
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Função normal para calcular seno de graus
+double sin_deg(double graus) {
+    return std::sin(graus * PI / 180.0);
+}
+
+int main() {
+    double N;
+    std::cout << "Digite um ângulo em graus: ";
+    std::cin >> N;
+    
+    std::cout << "sin(" << N << "°) = " << sin_deg(N) << '\n';
+    
+    return 0;
+}
+```
+
+### Solução 2: Usando `constexpr` com função (melhor dos dois mundos)
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Função constexpr - funciona em tempo de COMPILAÇÃO e EXECUÇÃO
+constexpr double sin_deg(double graus) {
+    return std::sin(graus * PI / 180.0);
+}
+
+int main() {
+    // ✅ Em tempo de compilação (constante conhecida)
+    constexpr double resultado1 = sin_deg(45);
+    std::cout << "sin(45°) = " << resultado1 << " (compile-time)\n";
+    
+    // ✅ Em tempo de execução (valor do usuário)
+    double N;
+    std::cout << "Digite um ângulo em graus: ";
+    std::cin >> N;
+    
+    double resultado2 = sin_deg(N);
+    std::cout << "sin(" << N << "°) = " << resultado2 << " (runtime)\n";
+    
+    return 0;
+}
+```
+
+### Solução 3: Usando template APENAS para constantes + função para runtime
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Template para constantes (tempo de compilação)
+template<auto G>
+constexpr auto Radianos = G * PI / 180.0;
+
+template<auto G>
+constexpr auto sin_deg_c = std::sin(Radianos<G>);
+
+// Função para runtime (entrada do usuário)
+double sin_deg_r(double graus) {
+    return std::sin(graus * PI / 180.0);
+}
+
+int main() {
+    std::cout << "=== TEMPLATE (compile-time) ===\n";
+    std::cout << "sin(45°) = " << sin_deg_c<45> << '\n';
+    std::cout << "sin(30°) = " << sin_deg_c<30> << '\n';
+    
+    std::cout << "\n=== FUNÇÃO (runtime) ===\n";
+    double N;
+    std::cout << "Digite um ângulo em graus: ";
+    std::cin >> N;
+    
+    std::cout << "sin(" << N << "°) = " << sin_deg_r(N) << '\n';
+    
+    return 0;
+}
+```
+
+### Solução 4: Usando `if constexpr` para decidir em compilação
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Versão template (compile-time)
+template<auto G>
+constexpr auto sin_template = std::sin(G * PI / 180.0);
+
+// Versão função (runtime)
+double sin_function(double g) {
+    return std::sin(g * PI / 180.0);
+}
+
+// Função unificada que decide em tempo de compilação
+template<typename T>
+auto sin_deg(T graus) {
+    if constexpr (std::is_constant_evaluated()) {
+        // Se for constante em tempo de compilação
+        return std::sin(graus * PI / 180.0);
+    } else {
+        // Se for runtime
+        return std::sin(graus * PI / 180.0);
+    }
+}
+
+int main() {
+    // Constante em tempo de compilação
+    constexpr double angulo1 = 45;
+    std::cout << "sin(45°) = " << sin_deg(angulo1) << " (compile-time)\n";
+    
+    // Runtime (entrada do usuário)
+    double angulo2;
+    std::cout << "Digite um ângulo: ";
+    std::cin >> angulo2;
+    std::cout << "sin(" << angulo2 << "°) = " << sin_deg(angulo2) << " (runtime)\n";
+    
+    return 0;
+}
+```
+
+### Solução 5: Estrutura que suporta ambos
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Classe para ângulos
+class Angulo {
+private:
+    double graus_;
+public:
+    // Construtor para runtime
+    explicit constexpr Angulo(double g) : graus_(g) {}
+    
+    // Construtor para compile-time (com template)
+    template<auto G>
+    static constexpr Angulo from_const() {
+        return Angulo(static_cast<double>(G));
+    }
+    
+    constexpr double graus() const { return graus_; }
+    constexpr double radianos() const { return graus_ * PI / 180.0; }
+    
+    // Funções trigonométricas
+    constexpr double sin() const { return std::sin(radianos()); }
+    constexpr double cos() const { return std::cos(radianos()); }
+    constexpr double tan() const { return std::tan(radianos()); }
+};
+
+int main() {
+    // ✅ Compile-time (constante)
+    constexpr auto ang1 = Angulo::from_const<45>();
+    std::cout << "sin(45°) = " << ang1.sin() << " (compile-time)\n";
+    
+    // ✅ Runtime (entrada do usuário)
+    double N;
+    std::cout << "Digite um ângulo em graus: ";
+    std::cin >> N;
+    
+    Angulo ang2(N);
+    std::cout << "sin(" << N << "°) = " << ang2.sin() << " (runtime)\n";
+    std::cout << "cos(" << N << "°) = " << ang2.cos() << " (runtime)\n";
+    std::cout << "tan(" << N << "°) = " << ang2.tan() << " (runtime)\n";
+    
+    return 0;
+}
+```
+
+### Solução 6: Usando `std::variant` para ambos os casos
+
+```cpp
+#include <iostream>
+#include <cmath>
+#include <variant>
+
+constexpr double PI = 3.14159265358979323846;
+
+// Para compile-time
+template<auto G>
+struct ConstAngle {
+    static constexpr double value = G;
+    static constexpr double rad = G * PI / 180.0;
+    static constexpr double sin = std::sin(rad);
+    static constexpr double cos = std::cos(rad);
+    static constexpr double tan = std::tan(rad);
+};
+
+// Para runtime
+struct RuntimeAngle {
+    double value;
+    double rad() const { return value * PI / 180.0; }
+    double sin() const { return std::sin(rad()); }
+    double cos() const { return std::cos(rad()); }
+    double tan() const { return std::tan(rad()); }
+};
+
+int main() {
+    // Compile-time
+    std::cout << "=== COMPILE-TIME ===\n";
+    std::cout << "sin(30°) = " << ConstAngle<30>::sin << '\n';
+    std::cout << "cos(60°) = " << ConstAngle<60>::cos << '\n';
+    
+    // Runtime
+    std::cout << "\n=== RUNTIME ===\n";
+    double N;
+    std::cout << "Digite um ângulo em graus: ";
+    std::cin >> N;
+    
+    RuntimeAngle ang{N};
+    std::cout << "sin(" << N << "°) = " << ang.sin() << '\n';
+    std::cout << "cos(" << N << "°) = " << ang.cos() << '\n';
+    std::cout << "tan(" << N << "°) = " << ang.tan() << '\n';
+    
+    return 0;
+}
+```
+
+## Resumo: Quando usar cada abordagem
+
+| Abordagem | Quando usar | Exemplo |
+|-----------|-------------|---------|
+| **Template** (`<45>`) | Valores conhecidos em COMPILAÇÃO | `sin<45>` |
+| **Função normal** | Valores do USUÁRIO (runtime) | `sin(45.0)` |
+| **`constexpr`** | AMBOS! (melhor opção) | `constexpr double x = sin(45)` e `double y = sin(N)` |
+| **Classe** | Quando precisa de mais funcionalidades | `Angulo a(45); a.sin()` |
+
+## Exemplo prático: Sistema que aceita os dois
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+constexpr double PI = 3.14159265358979323846;
+
+// ✅ FUNÇÃO CONSTEXPR - Funciona em compile-time E runtime
+constexpr double sin_deg(double graus) {
+    return std::sin(graus * PI / 180.0);
+}
+
+int main() {
+    std::cout << "=== SISTEMA HÍBRIDO ===\n\n";
+    
+    // ✅ COMPILE-TIME: constante conhecida
+    constexpr double angulo1 = 45.0;
+    constexpr double resultado1 = sin_deg(angulo1);
+    std::cout << "sin(45°) = " << resultado1 << " (calculado em compilação)\n";
+    
+    // ✅ RUNTIME: entrada do usuário
+    double angulo2;
+    std::cout << "\nDigite um ângulo em graus: ";
+    std::cin >> angulo2;
+    
+    double resultado2 = sin_deg(angulo2);
+    std::cout << "sin(" << angulo2 << "°) = " << resultado2 << " (calculado em execução)\n";
+    
+    // ✅ Compile-time com template (para quem gosta da sintaxe)
+    template<auto G>
+    constexpr auto sin_template = std::sin(G * PI / 180.0);
+    
+    std::cout << "\nUsando template: sin(30°) = " << sin_template<30> << '\n';
+    
+    return 0;
+}
+```
+
+## Conclusão
+
+**Sua observação está 100% correta!**
+
+- ✅ **Templates** (`<45>`) = só com constantes em **tempo de compilação**
+- ✅ **Funções normais** = aceitam valores em **tempo de execução** (como `std::cin`)
+- ✅ **`constexpr`** = funciona em **AMBOS** os casos (a melhor opção!)
+
+**Recomendação:** Use `constexpr` para ter o melhor dos dois mundos:
+
+```cpp
+constexpr double sin_deg(double g) {
+    return std::sin(g * PI / 180.0);
+}
+
+// Funciona com constante (compile-time)
+constexpr double x = sin_deg(45);
+
+// E também com input do usuário (runtime)
+double y;
+std::cin >> y;
+double z = sin_deg(y);
+```
+
+Assim você tem **flexibilidade** e **performance** quando possível! 🚀
