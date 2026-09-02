@@ -1,77 +1,38 @@
+`distance<N>(x, y, f)` é o algoritmo genérico do EoP (Elements of Programming) que responde a uma pergunta só: **"quantas vezes preciso aplicar a transformação `f` em `x` até chegar em `y`?"**
+
 ```cpp
-#include <tuple>
-#include <iostream>
-
-int main()
+template <class N, class X, class F>
+N distance(X x, X y, F f)
 {
-    std::tuple<int, int, int> rgb = {255, 128, 0};
-
-    // Acesso via std::get<índice>
-    int r = std::get<0> (rgb);
-    int g = std::get<1> (rgb);
-    int b = std::get<2> (rgb);
-
-    std::cout << "r=" << r << " g=" << g << " b=" << b << std::endl;
-
-    // Structured bindings (C++17) — mais legível
-    auto [r2, g2, b2] = rgb;
-    std::cout << "r=" << r2 << " g=" << g2 << " b=" << b2 << std::endl;
-
-    return 0;
+    N n = N(0);
+    while (x != y)
+    {
+        x = f(x);
+        n = n + N(1);
+    }
+    return n;
 }
 ```
 
-Saída:
-```
-r=255 g=128 b=0
-r=255 g=128 b=0
-```
+## Os três papéis
 
-`std::get<0>/<1>/<2>` acessa por posição (não por nome, tupla não tem `.r`/`.g`/`.b`). O structured binding (`auto [r, g, b] = rgb`) é a forma mais legível em C++17+, evita `std::get` repetido.
+- **`X`** — o "espaço" onde `x` e `y` vivem. Não precisa ser número nem iterador: pode ser um `int`, um `Employee*`, uma largura de intervalo (`double`), um ângulo. A única exigência é suportar `==` (ou `>`, na variante contínua) e ser comparável a `y`.
+- **`F`** — a transformação, `f: X -> X`. É o "passo": avançar um iterador, subir um nível de gerência, bissectar um intervalo, dobrar um ângulo reduzido.
+- **`N`** — o tipo do contador (aqui sempre `int`).
 
-Se for usar RGB com frequência no código, uma `struct` nomeada continua mais clara que tupla — tupla é melhor pra casos genéricos/temporários (retorno múltiplo de função, por exemplo):
+`distance` não sabe nada sobre vetores, hierarquias ou trigonometria — ele só sabe **contar aplicações de `f` até bater no alvo `y`**. Essa é a essência do EoP: extrair o padrão comum por trás de problemas aparentemente diferentes.
 
-```cpp
-std::tuple<int,int,int> get_color() { return {255, 0, 128}; }
+## Onde usamos, nesta conversa
 
-auto [r, g, b] = get_color();
-```
-`std::make_tuple` cria uma tupla deduzindo os tipos automaticamente, sem precisar escrever `std::tuple<int,int,int>` explicitamente:
+| Domínio | `X` | `f` | `y` | O que `distance` respondeu |
+|---|---|---|---|---|
+| Iteradores de vetor | `vector<int>::iterator` | `++it` | `end()` | tamanho do vetor |
+| Conjectura de Collatz | `int` | `x/2` ou `3x+1` | `1` | quantos passos até 1 |
+| Hierarquia corporativa | `Employee*` | `->manager` | `nullptr` | nível abaixo do CEO |
+| Método da bisseção | `double` (largura) | `w/2` | `eps` | quantas iterações até a tolerância |
+| Cálculo de seno | `double` (ângulo) | `θ/2` | `eps` | quantas reduções antes da aproximação de ângulo pequeno |
 
-```cpp
-#include <tuple>
-#include <iostream>
+## O ganho real de pensar assim
 
-int main()
-{
-    // std::make_tuple deduz os tipos dos argumentos
-    auto rgb = std::make_tuple (255, 128, 0);
-    // equivalente a: std::tuple<int, int, int> rgb(255, 128, 0);
-
-    auto [r, g, b] = rgb;
-    std::cout << "r=" << r << " g=" << g << " b=" << b << std::endl;
-
-    // útil quando os tipos são diferentes ou verbosos
-    auto misto = std::make_tuple (1, 3.14, "texto", 'c');
-    // deduz: tuple<int, double, const char*, char>
-
-    std::cout << std::get<0>(misto) << " "
-              << std::get<1>(misto) << " "
-              << std::get<2>(misto) << " "
-              << std::get<3>(misto) << std::endl;
-
-    return 0;
-}
-```
-
-Diferença prática: com `std::tuple<int,int,int> rgb{255,128,0}` você declara o tipo; com `std::make_tuple` o compilador deduz — mais útil quando os tipos são longos/complexos ou quando a tupla é retornada de uma função:
-
-```cpp
-auto get_color()
-{
-    return std::make_tuple (255, 0, 128); // retorna tuple<int,int,int> deduzido
-}
-```
-
-Desde C++17, com *class template argument deduction (CTAD)*, `std::tuple` também deduz sozinho (`std::tuple rgb{255,128,0}` funciona), então `make_tuple` ficou menos essencial — mas ainda é comum ver em código.
+Em vez de escrever um `for` diferente para cada um desses cinco problemas, você reconhece que todos são **a mesma estrutura algébrica**: uma órbita de `x` sob `f` até atingir `y`. Isso é o cerne do EoP — generalizar sobre **conceitos** (aqui, "transformação com órbita finita alcançável"), não sobre tipos concretos. Na prática de engenharia, isso vira uma ferramenta legítima: decidir quantas iterações um algoritmo numérico vai precisar antes mesmo de rodá-lo.
 
