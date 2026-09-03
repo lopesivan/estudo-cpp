@@ -2,8 +2,8 @@
 
 .param A      = 10       ; Amplitude 10
 .param f      = 1k       ; frequencia de 1k Hz
-.param n      = 2        ; numero de períodos
-.param np     = 1000     ; número de pontos
+.param n      = 3        ; numero de períodos
+.param np     = 500      ; número de pontos
 .param T      = {1/f}    ; período
 .param tstart = T/100    ; tempo inicial
 .param tstop  = n*T      ; tempo final
@@ -26,8 +26,6 @@ C1 out  0 1u
     option numdgt=16
 
     wrdata rc.dat v(in) v(out)
-
-    quit
 .endc
 
 .end
