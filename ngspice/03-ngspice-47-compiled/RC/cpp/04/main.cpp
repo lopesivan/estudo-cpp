@@ -2,16 +2,17 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <numeric>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 // ------------------------------------------------------------
-// Callbacks do ngspice
+// Callbacks ngspice
 // ------------------------------------------------------------
 
 int send_char(char* msg, int, void*)
@@ -30,44 +31,52 @@ int controlled_exit(int status, bool, bool, int, void*)
 }
 
 // ------------------------------------------------------------
-// Executa um comando no ngspice
+// Executa comando no ngspice
 // ------------------------------------------------------------
 
 void ng_command(const std::string& command)
 {
     std::vector<char> buffer(command.begin(), command.end());
+
     buffer.push_back('\0');
 
     const int status = ngSpice_Command(buffer.data());
 
     if(status != 0)
+    {
         throw std::runtime_error(
             "Erro executando comando ngspice: " + command);
+    }
 }
 
 // ------------------------------------------------------------
-// Copia um vetor interno do ngspice para std::vector<double>
+// Recupera vetor interno do ngspice
 // ------------------------------------------------------------
 
 std::vector<double> get_vector(const std::string& name)
 {
     std::vector<char> buffer(name.begin(), name.end());
+
     buffer.push_back('\0');
 
     pvector_info info = ngGet_Vec_Info(buffer.data());
 
     if(!info)
+    {
         throw std::runtime_error("Vetor nao encontrado: " + name);
+    }
 
     if(!info->v_realdata)
+    {
         throw std::runtime_error("Vetor nao possui dados reais: " +
                                  name);
+    }
 
     return {info->v_realdata, info->v_realdata + info->v_length};
 }
 
 // ------------------------------------------------------------
-// Estatísticas
+// Informações estatísticas
 // ------------------------------------------------------------
 
 struct SignalInfo
@@ -79,15 +88,23 @@ struct SignalInfo
     double rms;
 };
 
+// ------------------------------------------------------------
+// Analisa sinal usando integração temporal
+// ------------------------------------------------------------
+
 SignalInfo analyze(std::span<const double> time,
                    std::span<const double> signal)
 {
     if(time.size() != signal.size())
+    {
         throw std::runtime_error(
             "time e signal possuem tamanhos diferentes");
+    }
 
     if(signal.size() < 2)
+    {
         throw std::runtime_error("Numero insuficiente de amostras");
+    }
 
     const auto [min_it, max_it] =
         std::ranges::minmax_element(signal);
@@ -99,10 +116,10 @@ SignalInfo analyze(std::span<const double> time,
     {
         const double dt = time[i] - time[i - 1];
 
-        // Integral de v(t)
+        // Integral de x(t)
         integral += 0.5 * (signal[i - 1] + signal[i]) * dt;
 
-        // Integral de v²(t)
+        // Integral de x²(t)
         integral_sq += 0.5 *
                        (signal[i - 1] * signal[i - 1] +
                         signal[i] * signal[i]) *
@@ -121,11 +138,54 @@ SignalInfo analyze(std::span<const double> time,
             .amplitude = (*max_it - *min_it) / 2.0,
             .rms       = rms};
 }
+
 // ------------------------------------------------------------
-// Impressão
+// Potência média
+//
+// P = (1/T) integral v(t)i(t) dt
 // ------------------------------------------------------------
 
-void print_signal(const std::string& name, const SignalInfo& s)
+double average_power(std::span<const double> time,
+                     std::span<const double> voltage,
+                     std::span<const double> current)
+{
+    if(time.size() != voltage.size() ||
+       time.size() != current.size())
+    {
+        throw std::runtime_error("Vetores com tamanhos diferentes");
+    }
+
+    if(time.size() < 2)
+    {
+        throw std::runtime_error("Numero insuficiente de amostras");
+    }
+
+    double integral = 0.0;
+
+    for(std::size_t i = 1; i < time.size(); ++i)
+    {
+        const double dt = time[i] - time[i - 1];
+
+        const double p0 = voltage[i - 1] * current[i - 1];
+
+        const double p1 = voltage[i] * current[i];
+
+        integral += 0.5 * (p0 + p1) * dt;
+    }
+
+    const double duration = time.back() - time.front();
+
+    return integral / duration;
+}
+
+// ------------------------------------------------------------
+// Impressão de grandezas elétricas
+// ------------------------------------------------------------
+
+void print_signal(const std::string& name,
+                  const SignalInfo&  signal,
+                  const std::string& unit,
+                  double             scale = 1.0)
 {
     constexpr int label_width = 10;
     constexpr int value_width = 12;
@@ -141,16 +201,17 @@ void print_signal(const std::string& name, const SignalInfo& s)
 
                   << ": "
 
-                  << std::right << std::setw(value_width) << value
+                  << std::right << std::setw(value_width)
+                  << value * scale
 
-                  << " V\n";
+                  << ' ' << unit << '\n';
     };
 
-    print("Minimo", s.min);
-    print("Maximo", s.max);
-    print("Media", s.mean);
-    print("Amplitude", s.amplitude);
-    print("RMS", s.rms);
+    print("Minimo", signal.min);
+    print("Maximo", signal.max);
+    print("Media", signal.mean);
+    print("Amplitude", signal.amplitude);
+    print("RMS", signal.rms);
 }
 
 // ------------------------------------------------------------
@@ -165,53 +226,126 @@ int main()
         // Inicializa libngspice
         // ----------------------------------------------------
 
-        const int status = ngSpice_Init(send_char,
-                                        nullptr,
-                                        controlled_exit,
-                                        nullptr,
-                                        nullptr,
-                                        nullptr,
-                                        nullptr);
+        const int init_status = ngSpice_Init(send_char,
+                                             nullptr,
+                                             controlled_exit,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr,
+                                             nullptr);
 
-        if(status != 0)
+        if(init_status != 0)
+        {
             throw std::runtime_error(
                 "Falha ao inicializar libngspice");
+        }
 
         // ----------------------------------------------------
-        // Carrega o circuito
+        // Carrega circuito e executa simulação
         // ----------------------------------------------------
 
         ng_command("source RC.sp");
-
-        // ----------------------------------------------------
-        // Executa .tran
-        // ----------------------------------------------------
-
         ng_command("run");
 
         // ----------------------------------------------------
-        // Recupera diretamente os vetores do ngspice
+        // Recupera vetores do ngspice
         // ----------------------------------------------------
 
         const auto time = get_vector("time");
-        const auto vin  = get_vector("in");
+
+        const auto vin = get_vector("in");
+
         const auto vout = get_vector("out");
 
-        if(time.size() != vin.size() || time.size() != vout.size())
+        const auto v1_branch = get_vector("v1#branch");
+
+        // ----------------------------------------------------
+        // Validação
+        // ----------------------------------------------------
+
+        if(time.size() != vin.size() ||
+           time.size() != vout.size() ||
+           time.size() != v1_branch.size())
         {
             throw std::runtime_error(
                 "Vetores com tamanhos diferentes");
         }
 
         // ----------------------------------------------------
-        // Analisa
+        // Corrente do circuito
+        //
+        // v1#branch usa a convenção interna do ngspice.
+        // Invertemos o sinal para definir:
+        //
+        // fonte -> R1 -> C1 -> terra
         // ----------------------------------------------------
 
-        const auto vin_info  = analyze(time, vin);
+        std::vector<double> current(v1_branch.size());
+
+        std::ranges::transform(v1_branch,
+                               current.begin(),
+                               [](double value) { return -value; });
+
+        // ----------------------------------------------------
+        // Tensão sobre o resistor
+        //
+        // Vr = Vin - Vout
+        // ----------------------------------------------------
+
+        std::vector<double> vr(vin.size());
+
+        std::ranges::transform(
+            vin, vout, vr.begin(), std::minus<>{});
+
+        // ----------------------------------------------------
+        // Análises
+        // ----------------------------------------------------
+
+        const auto vin_info = analyze(time, vin);
+
         const auto vout_info = analyze(time, vout);
 
+        const auto vr_info = analyze(time, vr);
+
+        const auto current_info = analyze(time, current);
+
         // ----------------------------------------------------
-        // Resultado
+        // Potências médias
+        // ----------------------------------------------------
+
+        // Resistor:
+        //
+        // corrente entra no terminal positivo de Vr
+        //
+        const double p_resistor = average_power(time, vr, current);
+
+        // Capacitor:
+        //
+        // Vout é a tensão superior do capacitor.
+        // A corrente entra nesse terminal.
+        //
+        const double p_capacitor =
+            average_power(time, vout, current);
+
+        // Fonte:
+        //
+        // current foi definida saindo do terminal
+        // positivo da fonte.
+        //
+        // Portanto este valor representa potência
+        // fornecida pela fonte.
+        //
+        const double p_source = average_power(time, vin, current);
+
+        // ----------------------------------------------------
+        // Ganho
+        // ----------------------------------------------------
+
+        const double gain =
+            vout_info.amplitude / vin_info.amplitude;
+
+        // ----------------------------------------------------
+        // Saída
         // ----------------------------------------------------
 
         std::cout << std::fixed << std::setprecision(6);
@@ -225,15 +359,49 @@ int main()
         std::cout << "Tempo final       : " << time.back() * 1e3
                   << " ms\n";
 
-        print_signal("v(in)", vin_info);
-        print_signal("v(out)", vout_info);
+        // ----------------------------------------------------
+        // Tensões
+        // ----------------------------------------------------
 
-        const double gain =
-            vout_info.amplitude / vin_info.amplitude;
+        print_signal("v(in)", vin_info, "V");
+
+        print_signal("v(out)", vout_info, "V");
+
+        print_signal("v(R1)", vr_info, "V");
+
+        // ----------------------------------------------------
+        // Corrente
+        // ----------------------------------------------------
+
+        print_signal("Corrente", current_info, "mA", 1e3);
+
+        // ----------------------------------------------------
+        // Ganho
+        // ----------------------------------------------------
 
         std::cout << "\nRelacao de amplitudes\n"
                   << "--------------------------------\n"
-                  << "  Aout/Ain  : " << gain << '\n';
+                  << "  Aout/Ain  : " << std::setw(12) << gain
+                  << '\n';
+
+        // ----------------------------------------------------
+        // Potência média
+        // ----------------------------------------------------
+
+        std::cout << "\nPotencia media\n"
+                  << "--------------------------------\n"
+
+                  << "  Fonte      : " << std::setw(12)
+                  << p_source * 1e3 << " mW\n"
+
+                  << "  Resistor   : " << std::setw(12)
+                  << p_resistor * 1e3 << " mW\n"
+
+                  << "  Capacitor  : " << std::setw(12)
+                  << p_capacitor * 1e3 << " mW\n"
+
+                  << "  R + C      : " << std::setw(12)
+                  << (p_resistor + p_capacitor) * 1e3 << " mW\n";
 
         return 0;
     }
