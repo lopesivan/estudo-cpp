@@ -1,153 +1,286 @@
+#include <ngspice/sharedspice.h>
+
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <span>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-struct Signal
+// ------------------------------------------------------------
+// Callbacks do ngspice
+// ------------------------------------------------------------
+
+int send_char(char* msg, int, void*)
 {
-    std::vector<double> values;
+    if(msg)
+        std::cout << "[ngspice] " << msg << '\n';
 
-    [[nodiscard]]
-    double min() const
-    {
-        return *std::ranges::min_element(values);
-    }
-
-    [[nodiscard]]
-    double max() const
-    {
-        return *std::ranges::max_element(values);
-    }
-
-    [[nodiscard]]
-    double mean() const
-    {
-        return std::reduce(values.begin(), values.end(), 0.0) /
-               static_cast<double>(values.size());
-    }
-
-    [[nodiscard]]
-    double amplitude() const
-    {
-        return (max() - min()) / 2.0;
-    }
-
-    [[nodiscard]]
-    double rms() const
-    {
-        const double sum =
-            std::transform_reduce(values.begin(),
-                                  values.end(),
-                                  0.0,
-                                  std::plus<>{},
-                                  [](double x) { return x * x; });
-
-        return std::sqrt(sum / static_cast<double>(values.size()));
-    }
-};
-
-struct TransientData
-{
-    std::vector<double> time;
-    Signal              vin;
-    Signal              vout;
-};
-
-TransientData load_data(const std::string& filename)
-{
-    std::ifstream file(filename);
-
-    if(!file)
-        throw std::runtime_error("Nao foi possivel abrir " +
-                                 filename);
-
-    TransientData data;
-
-    // Ignora:
-    //
-    // time    v(in)    v(out)
-    //
-    std::string header;
-    std::getline(file, header);
-
-    double t;
-    double vin;
-    double vout;
-
-    while(file >> t >> vin >> vout)
-    {
-        data.time.push_back(t);
-        data.vin.values.push_back(vin);
-        data.vout.values.push_back(vout);
-    }
-
-    return data;
+    return 0;
 }
 
-void print_signal(const std::string& name, const Signal& signal)
+int controlled_exit(int status, bool, bool, int, void*)
+{
+    std::cout
+        << "[ngspice] terminou com status "
+        << status << '\n';
+
+    return 0;
+}
+
+// ------------------------------------------------------------
+// Executa um comando no ngspice
+// ------------------------------------------------------------
+
+void ng_command(const std::string& command)
+{
+    std::vector<char> buffer(command.begin(), command.end());
+    buffer.push_back('\0');
+
+    const int status = ngSpice_Command(buffer.data());
+
+    if(status != 0)
+        throw std::runtime_error(
+            "Erro executando comando ngspice: " + command
+        );
+}
+
+// ------------------------------------------------------------
+// Copia um vetor interno do ngspice para std::vector<double>
+// ------------------------------------------------------------
+
+std::vector<double> get_vector(const std::string& name)
+{
+    std::vector<char> buffer(name.begin(), name.end());
+    buffer.push_back('\0');
+
+    pvector_info info =
+        ngGet_Vec_Info(buffer.data());
+
+    if(!info)
+        throw std::runtime_error(
+            "Vetor nao encontrado: " + name
+        );
+
+    if(!info->v_realdata)
+        throw std::runtime_error(
+            "Vetor nao possui dados reais: " + name
+        );
+
+    return {
+        info->v_realdata,
+        info->v_realdata + info->v_length
+    };
+}
+
+// ------------------------------------------------------------
+// Estatísticas
+// ------------------------------------------------------------
+
+struct SignalInfo
+{
+    double min;
+    double max;
+    double mean;
+    double amplitude;
+    double rms;
+};
+
+SignalInfo analyze(std::span<const double> signal)
+{
+    if(signal.empty())
+        throw std::runtime_error("Sinal vazio");
+
+    const auto [min_it, max_it] =
+        std::ranges::minmax_element(signal);
+
+    const double mean =
+        std::accumulate(
+            signal.begin(),
+            signal.end(),
+            0.0
+        ) / static_cast<double>(signal.size());
+
+    const double sum_squared =
+        std::transform_reduce(
+            signal.begin(),
+            signal.end(),
+            0.0,
+            std::plus<> {},
+            [](double x)
+            {
+                return x * x;
+            }
+        );
+
+    const double rms =
+        std::sqrt(
+            sum_squared /
+            static_cast<double>(signal.size())
+        );
+
+    return {
+        .min       = *min_it,
+        .max       = *max_it,
+        .mean      = mean,
+        .amplitude = (*max_it - *min_it) / 2.0,
+        .rms       = rms
+    };
+}
+
+// ------------------------------------------------------------
+// Impressão
+// ------------------------------------------------------------
+
+void print_signal(
+    const std::string& name,
+    const SignalInfo& s)
 {
     constexpr int label_width = 10;
     constexpr int value_width = 12;
 
-    std::cout << name << '\n'
-              << "--------------------------------\n"
+    std::cout
+        << '\n'
+        << name << '\n'
+        << "--------------------------------\n";
 
-              << "  " << std::left << std::setw(label_width)
-              << "Minimo"
-              << ": " << std::right << std::setw(value_width)
-              << signal.min() << " V\n"
+    auto print =
+        [&](const std::string& label, double value)
+        {
+            std::cout
+                << "  "
+                << std::left
+                << std::setw(label_width)
+                << label
 
-              << "  " << std::left << std::setw(label_width)
-              << "Maximo"
-              << ": " << std::right << std::setw(value_width)
-              << signal.max() << " V\n"
+                << ": "
 
-              << "  " << std::left << std::setw(label_width)
-              << "Media"
-              << ": " << std::right << std::setw(value_width)
-              << signal.mean() << " V\n"
+                << std::right
+                << std::setw(value_width)
+                << value
 
-              << "  " << std::left << std::setw(label_width)
-              << "Amplitude"
-              << ": " << std::right << std::setw(value_width)
-              << signal.amplitude() << " V\n"
+                << " V\n";
+        };
 
-              << "  " << std::left << std::setw(label_width)
-              << "RMS"
-              << ": " << std::right << std::setw(value_width)
-              << signal.rms() << " V\n";
+    print("Minimo",    s.min);
+    print("Maximo",    s.max);
+    print("Media",     s.mean);
+    print("Amplitude", s.amplitude);
+    print("RMS",       s.rms);
 }
+
+// ------------------------------------------------------------
+// main
+// ------------------------------------------------------------
 
 int main()
 {
     try
     {
-        const auto data = load_data("rc.dat");
+        // ----------------------------------------------------
+        // Inicializa libngspice
+        // ----------------------------------------------------
 
-        std::cout << std::fixed << std::setprecision(6);
+        const int status =
+            ngSpice_Init(
+                send_char,
+                nullptr,
+                controlled_exit,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr
+            );
 
-        std::cout << "Numero de amostras: " << data.time.size()
-                  << "\n\n";
+        if(status != 0)
+            throw std::runtime_error(
+                "Falha ao inicializar libngspice"
+            );
 
-        print_signal("v(in)", data.vin);
+        // ----------------------------------------------------
+        // Carrega o circuito
+        // ----------------------------------------------------
 
-        std::cout << '\n';
+        ng_command("source RC.sp");
 
-        print_signal("v(out)", data.vout);
+        // ----------------------------------------------------
+        // Executa .tran
+        // ----------------------------------------------------
+
+        ng_command("run");
+
+        // ----------------------------------------------------
+        // Recupera diretamente os vetores do ngspice
+        // ----------------------------------------------------
+
+        const auto time = get_vector("time");
+        const auto vin  = get_vector("in");
+        const auto vout = get_vector("out");
+
+        if(time.size() != vin.size() ||
+           time.size() != vout.size())
+        {
+            throw std::runtime_error(
+                "Vetores com tamanhos diferentes"
+            );
+        }
+
+        // ----------------------------------------------------
+        // Analisa
+        // ----------------------------------------------------
+
+        const auto vin_info  = analyze(vin);
+        const auto vout_info = analyze(vout);
+
+        // ----------------------------------------------------
+        // Resultado
+        // ----------------------------------------------------
+
+        std::cout
+            << std::fixed
+            << std::setprecision(6);
+
+        std::cout
+            << "\nNumero de amostras: "
+            << time.size()
+            << '\n';
+
+        std::cout
+            << "Tempo inicial     : "
+            << time.front() * 1e3
+            << " ms\n";
+
+        std::cout
+            << "Tempo final       : "
+            << time.back() * 1e3
+            << " ms\n";
+
+        print_signal("v(in)", vin_info);
+        print_signal("v(out)", vout_info);
 
         const double gain =
-            data.vout.amplitude() / data.vin.amplitude();
+            vout_info.amplitude /
+            vin_info.amplitude;
 
-        std::cout << "\nRelacao de amplitudes\n"
-                  << "  Aout/Ain = " << gain << '\n';
+        std::cout
+            << "\nRelacao de amplitudes\n"
+            << "--------------------------------\n"
+            << "  Aout/Ain  : "
+            << gain
+            << '\n';
+
+        return 0;
     }
     catch(const std::exception& e)
     {
-        std::cerr << "Erro: " << e.what() << '\n';
+        std::cerr
+            << "Erro: "
+            << e.what()
+            << '\n';
+
         return 1;
     }
 }
