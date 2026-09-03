@@ -321,3 +321,117 @@ Há ainda uma pequena questão: `time.front()` provavelmente não será **exatam
 
 Faça essas duas alterações e rode novamente. O resultado será uma base muito melhor para depois calcularmos **período, frequência e defasagem diretamente em C++20**.
 
+
+
+
+apos simulacao:
+
+
+Agora os resultados estão coerentes.
+
+Para a entrada:
+
+$$
+A_{in}\approx 9.999909\text{ V}
+$$
+
+e:
+
+$$
+V_{RMS,in}\approx 7.076241\text{ V}
+$$
+
+O RMS teórico de uma senoide de amplitude \(10\text{ V}\) é:
+
+$$
+\frac{10}{\sqrt 2}\approx 7.071068\text{ V}
+$$
+
+Então o erro é pequeno, cerca de \(0.07\%\).
+
+Para a saída:
+
+$$
+A_{out}\approx 1.571763\text{ V}
+$$
+
+e a relação:
+
+$$
+\frac{A_{out}}{A_{in}}
+=
+0.157178
+$$
+
+bate praticamente com o valor teórico do RC em \(1\,\text{kHz}\):
+
+$$
+|H(j\omega)|
+=
+\frac{1}{\sqrt{1+(\omega RC)^2}}
+\approx 0.1571777
+$$
+
+Logo:
+
+$$
+10\times0.1571777
+\approx1.571777\text{ V}
+$$
+
+Seu resultado:
+
+```text
+Amplitude : 1.571763 V
+Aout/Ain  : 0.157178
+```
+
+está excelente.
+
+Também é importante notar isto:
+
+```text
+Tempo inicial : 9.001462 ms
+Tempo final   : 10.000000 ms
+```
+
+O primeiro ponto não caiu exatamente em `9 ms`, por causa do passo adaptativo interno do ngspice. Isso explica parte da pequena diferença no RMS e na média.
+
+Agora temos uma base sólida em C++20:
+
+```text
+libngspice
+   ↓
+time, vin, vout
+   ↓
+std::vector<double>
+   ↓
+análise temporal correta
+   ├── mínimo
+   ├── máximo
+   ├── média
+   ├── amplitude
+   └── RMS
+```
+
+O próximo passo natural é calcular, ainda sem plotar:
+
+* período;
+* frequência;
+* cruzamentos por zero;
+* atraso temporal entre `vin` e `vout`;
+* defasagem em graus.
+
+Isso nos permitirá chegar em algo como:
+
+```text
+Frequencia        : 1000.000 Hz
+Periodo           : 1.000000 ms
+Atraso v(out)     : 0.224... ms
+Defasagem         : -80.96 deg
+Ganho             : 0.157178
+Ganho             : -16.07 dB
+```
+
+e tudo diretamente a partir dos vetores retornados pela `libngspice`.
+
