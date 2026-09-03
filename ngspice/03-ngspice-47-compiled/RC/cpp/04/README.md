@@ -1,437 +1,370 @@
-O que falhou foi a **interpretação dos dados**, não a integração com `libngspice`.
+Sim. Como o circuito é série, a corrente é a mesma em `R1` e `C1`. O caminho mais simples é recuperar `v1#branch` da `libngspice`; o manual confirma que correntes de ramo aparecem como vetores `xx#branch`. 
 
-Há dois problemas:
-
-1. você simulou só `3 ms`, sendo que \(RC=1\,ms\). O transitório ainda não morreu;
-2. `mean()` e `rms()` estavam tratando as 500 amostras como uniformemente espaçadas, mas o ngspice usa passo adaptativo. O manual diz que `tstep` é um incremento sugerido e que a análise transiente usa seus próprios passos de cálculo. 
-
-### 1. Vamos primeiro corrigir o `RC.sp`
-
-O próprio ngspice tem exatamente o mecanismo que precisamos: ele sempre simula desde \(t=0\), mas, quando fornecemos `tstart`, **não armazena os dados anteriores a `tstart`**. 
-
-Então podemos deixar o circuito estabilizar durante 9 períodos e armazenar somente o décimo período:
-
-```spice
-* Circuito RC com fonte senoidal
-
-.param A      = 10
-.param f      = 1k
-.param n      = 10
-.param np     = 500
-
-.param T      = {1/f}
-
-.param tstart = {(n-1)*T}
-.param tstop  = {n*T}
-
-.param tstep  = {(tstop-tstart)/(np-1)}
-
-V1 in  0 SIN(0 {A} {f})
-R1 in out 1k
-C1 out 0 1u
-
-.tran {tstep} {tstop} {tstart}
-
-.end
-```
-
-Agora temos conceitualmente:
-
-```text
-0 ms                                      9 ms       10 ms
-│------------------------------------------│-----------│
-        circuito sendo estabilizado            dados
-        dados NÃO armazenados                 armazenados
-```
-
-Ou seja:
-
-$$
-0\rightarrow9\,ms
-$$
-
-serve para eliminar o transitório, enquanto:
-
-$$
-9\rightarrow10\,ms
-$$
-
-é exatamente um período que será entregue ao C++.
-
-Isso é melhor do que simular três períodos e tentar recortar depois no C++.
-
----
-
-### 2. Corrigir o cálculo de média e RMS
-
-Antes fizemos:
+Adicione no `main()`:
 
 ```cpp
-mean =
-    (x1 + x2 + ... + xn) / n;
+const auto current_source = get_vector("v1#branch");
 ```
+
+Como queremos definir a corrente no sentido:
+
+```text
+fonte -> R1 -> C1 -> terra
+```
+
+use:
+
+```cpp
+std::vector<double> current(current_source.size());
+
+std::ranges::transform(
+    current_source,
+    current.begin(),
+    [](double x)
+    {
+        return -x;
+    }
+);
+```
+
+Agora temos:
+
+```cpp
+time
+vin
+vout
+current
+```
+
+Para esse circuito:
+
+```text
+      i(t) →
+ V1 ───── R1 ───── C1
+       vin     vout
+```
+
+as tensões são:
+
+```cpp
+v_source = vin
+v_resistor = vin - vout
+v_capacitor = vout
+```
+
+Podemos então calcular potência média diretamente de:
+
+$$
+p(t)=v(t)i(t)
+$$
 
 e:
 
-```cpp
-rms =
-    sqrt((x1*x1 + ... + xn*xn) / n);
-```
-
-Isso pressupõe:
-
 $$
-\Delta t_1=\Delta t_2=\cdots
+P=\frac{1}{T}\int p(t)\,dt
 $$
 
-Mas não devemos pressupor isso com os pontos transientes do ngspice.
-
-Vamos calcular corretamente no domínio do tempo:
-
-$$
-V_{\text{médio}}
-=
-\frac{1}{t_f-t_i}
-\int_{t_i}^{t_f}v(t)\,dt
-$$
-
-e
-
-$$
-V_{\mathrm{RMS}}
-=
-\sqrt{
-\frac{1}{t_f-t_i}
-\int_{t_i}^{t_f}v^2(t)\,dt
-}.
-$$
-
-Usaremos integração trapezoidal.
-
-Substitua sua `analyze()` por:
+Crie:
 
 ```cpp
-SignalInfo analyze(
+double average_power(
     std::span<const double> time,
-    std::span<const double> signal)
+    std::span<const double> voltage,
+    std::span<const double> current)
 {
-    if(time.size() != signal.size())
+    if(time.size() != voltage.size() ||
+       time.size() != current.size())
+    {
         throw std::runtime_error(
-            "time e signal possuem tamanhos diferentes"
+            "Vetores com tamanhos diferentes"
         );
+    }
 
-    if(signal.size() < 2)
+    if(time.size() < 2)
         throw std::runtime_error(
             "Numero insuficiente de amostras"
         );
 
-    const auto [min_it, max_it] =
-        std::ranges::minmax_element(signal);
+    double integral = 0.0;
 
-    double integral     = 0.0;
-    double integral_sq  = 0.0;
-
-    for(std::size_t i = 1; i < signal.size(); ++i)
+    for(std::size_t i = 1; i < time.size(); ++i)
     {
         const double dt =
             time[i] - time[i - 1];
 
-        // Integral de v(t)
-        integral +=
-            0.5 *
-            (signal[i - 1] + signal[i]) *
-            dt;
+        const double p0 =
+            voltage[i - 1] * current[i - 1];
 
-        // Integral de v²(t)
-        integral_sq +=
-            0.5 *
-            (
-                signal[i - 1] * signal[i - 1] +
-                signal[i]     * signal[i]
-            ) *
-            dt;
+        const double p1 =
+            voltage[i] * current[i];
+
+        integral +=
+            0.5 * (p0 + p1) * dt;
     }
 
     const double duration =
         time.back() - time.front();
 
-    const double mean =
-        integral / duration;
-
-    const double rms =
-        std::sqrt(
-            integral_sq / duration
-        );
-
-    return {
-        .min       = *min_it,
-        .max       = *max_it,
-        .mean      = mean,
-        .amplitude = (*max_it - *min_it) / 2.0,
-        .rms       = rms
-    };
+    return integral / duration;
 }
 ```
 
-Agora ela recebe:
+Também podemos analisar a própria corrente com a função `analyze()` que já temos:
 
 ```cpp
-time
-signal
+const auto current_info =
+    analyze(time, current);
 ```
 
-porque o tempo passou a fazer parte do cálculo.
-
-Então no `main()` mudamos:
+Como `analyze()` atualmente imprime unidades em volts, eu separaria a impressão da corrente:
 
 ```cpp
-const auto vin_info  = analyze(vin);
-const auto vout_info = analyze(vout);
+void print_current(
+    const SignalInfo& s)
+{
+    constexpr int label_width = 10;
+    constexpr int value_width = 12;
+
+    std::cout
+        << "\nCorrente\n"
+        << "--------------------------------\n";
+
+    auto print =
+        [&](const std::string& label, double value)
+        {
+            std::cout
+                << "  "
+                << std::left
+                << std::setw(label_width)
+                << label
+                << ": "
+                << std::right
+                << std::setw(value_width)
+                << value * 1e3
+                << " mA\n";
+        };
+
+    print("Minimo",    s.min);
+    print("Maximo",    s.max);
+    print("Media",     s.mean);
+    print("Amplitude", s.amplitude);
+    print("RMS",       s.rms);
+}
 ```
 
-para:
+Agora montamos as tensões dos componentes:
 
 ```cpp
-const auto vin_info =
-    analyze(time, vin);
+std::vector<double> vr(vin.size());
 
-const auto vout_info =
-    analyze(time, vout);
+std::ranges::transform(
+    vin,
+    vout,
+    vr.begin(),
+    std::minus<> {}
+);
 ```
 
----
+Ou seja:
 
-### 3. O restante continua igual
+```cpp
+vr[i] = vin[i] - vout[i];
+```
 
-A aquisição pela `libngspice` continua exatamente como está:
+Para as potências:
+
+```cpp
+const double p_resistor =
+    average_power(time, vr, current);
+
+const double p_capacitor =
+    average_power(time, vout, current);
+```
+
+Para a fonte existe uma diferença importante de convenção. Como definimos `current` como corrente **saindo do terminal positivo da fonte**, a potência fornecida pela fonte pode ser escrita:
+
+```cpp
+const double p_source =
+    average_power(time, vin, current);
+```
+
+Esse valor representa potência **entregue** pela fonte.
+
+Então imprima:
+
+```cpp
+std::cout
+    << "\nPotencia media\n"
+    << "--------------------------------\n"
+
+    << "  Fonte      : "
+    << std::setw(12)
+    << p_source
+    << " W\n"
+
+    << "  Resistor   : "
+    << std::setw(12)
+    << p_resistor
+    << " W\n"
+
+    << "  Capacitor  : "
+    << std::setw(12)
+    << p_capacitor
+    << " W\n";
+```
+
+No seu `main()`, a parte principal ficará assim:
 
 ```cpp
 const auto time = get_vector("time");
 const auto vin  = get_vector("in");
 const auto vout = get_vector("out");
+
+const auto current_source =
+    get_vector("v1#branch");
+
+std::vector<double> current(current_source.size());
+
+std::ranges::transform(
+    current_source,
+    current.begin(),
+    [](double x)
+    {
+        return -x;
+    }
+);
+
+std::vector<double> vr(vin.size());
+
+std::ranges::transform(
+    vin,
+    vout,
+    vr.begin(),
+    std::minus<> {}
+);
+
+const auto vin_info =
+    analyze(time, vin);
+
+const auto vout_info =
+    analyze(time, vout);
+
+const auto current_info =
+    analyze(time, current);
+
+const double p_resistor =
+    average_power(time, vr, current);
+
+const double p_capacitor =
+    average_power(time, vout, current);
+
+const double p_source =
+    average_power(time, vin, current);
 ```
 
-Então nosso fluxo continua inteiramente em C++:
+E depois:
 
-```text
-RC.sp
-   │
-   ▼
-libngspice
-   │
-   ├── time
-   ├── v(in)
-   └── v(out)
-          │
-          ▼
-   std::vector<double>
-          │
-          ▼
-       analyze()
-          │
-          ├── mínimo
-          ├── máximo
-          ├── média temporal
-          ├── amplitude
-          └── RMS temporal
+```cpp
+print_signal("v(in)", vin_info);
+print_signal("v(out)", vout_info);
+print_current(current_info);
+
+std::cout
+    << "\nPotencia media\n"
+    << "--------------------------------\n"
+    << "  Fonte      : "
+    << std::setw(12)
+    << p_source
+    << " W\n"
+    << "  Resistor   : "
+    << std::setw(12)
+    << p_resistor
+    << " W\n"
+    << "  Capacitor  : "
+    << std::setw(12)
+    << p_capacitor
+    << " W\n";
 ```
 
-### 4. O que esperamos agora
-
-Para `v(in)`:
+Para o seu circuito, esperamos aproximadamente:
 
 $$
-A_{in}=10\,V
-$$
-
-e:
-
-$$
-V_{in,RMS}
+I_{RMS}
 =
-\frac{10}{\sqrt2}
-\approx7.071068\,V.
-$$
-
-Para o RC:
-
-$$
-|H|
-=
-\frac{1}
-{\sqrt{1+(2\pi fRC)^2}}
+\frac{V_{RMS}}{|Z|}
 $$
 
 com
 
 $$
-f=1000,\quad R=1000,\quad C=1\mu F
-$$
-
-resulta aproximadamente:
-
-$$
-|H|\approx0.15718.
-$$
-
-Logo:
-
-$$
-A_{out}\approx1.5718\,V
+|Z|
+=
+\sqrt{R^2+X_C^2}
 $$
 
 e:
 
 $$
-V_{out,RMS}
+X_C
+=
+\frac{1}{2\pi fC}
+\approx159.15\Omega.
+$$
+
+Assim:
+
+$$
+|Z|
 \approx
-\frac{1.5718}{\sqrt2}
-\approx1.1114\,V.
-$$
-
-A saída deverá ficar aproximadamente:
-
-```text
-Numero de amostras: 500
-Tempo inicial     : 9.xxx ms
-Tempo final       : 10.000000 ms
-
-v(in)
---------------------------------
-  Minimo    :   -10.000000 V
-  Maximo    :    10.000000 V
-  Media     :     0.000000 V
-  Amplitude :    10.000000 V
-  RMS       :     7.071068 V
-
-v(out)
---------------------------------
-  Minimo    :    -1.572... V
-  Maximo    :     1.572... V
-  Media     :     ~0 V
-  Amplitude :     1.572... V
-  RMS       :     1.111... V
-
-Relacao de amplitudes
---------------------------------
-  Aout/Ain  :     0.157...
-```
-
-Há ainda uma pequena questão: `time.front()` provavelmente não será **exatamente** `9.000000 ms`, pelo mesmo motivo que anteriormente obtivemos `0.010363 ms` em vez de `0.010000 ms`. Isso decorre dos passos internos do transiente. 
-
-Faça essas duas alterações e rode novamente. O resultado será uma base muito melhor para depois calcularmos **período, frequência e defasagem diretamente em C++20**.
-
-
-
-
-apos simulacao:
-
-
-Agora os resultados estão coerentes.
-
-Para a entrada:
-
-$$
-A_{in}\approx 9.999909\text{ V}
+\sqrt{1000^2+159.15^2}
+\approx1012.6\Omega
 $$
 
 e:
 
 $$
-V_{RMS,in}\approx 7.076241\text{ V}
+I_{RMS}
+\approx
+\frac{7.071}{1012.6}
+\approx6.98\,mA.
 $$
 
-O RMS teórico de uma senoide de amplitude \(10\text{ V}\) é:
+A potência média no resistor deve ficar próxima de:
 
 $$
-\frac{10}{\sqrt 2}\approx 7.071068\text{ V}
+P_R=I_{RMS}^2R
+\approx48.8\,mW.
 $$
 
-Então o erro é pequeno, cerca de \(0.07\%\).
-
-Para a saída:
+Já o capacitor ideal deverá apresentar potência média próxima de:
 
 $$
-A_{out}\approx 1.571763\text{ V}
+P_C\approx0.
 $$
 
-e a relação:
+A fonte deverá fornecer aproximadamente a mesma potência absorvida pelo resistor:
 
 $$
-\frac{A_{out}}{A_{in}}
-=
-0.157178
+P_{\text{fonte}}\approx48.8\,mW.
 $$
 
-bate praticamente com o valor teórico do RC em \(1\,\text{kHz}\):
-
-$$
-|H(j\omega)|
-=
-\frac{1}{\sqrt{1+(\omega RC)^2}}
-\approx 0.1571777
-$$
-
-Logo:
-
-$$
-10\times0.1571777
-\approx1.571777\text{ V}
-$$
-
-Seu resultado:
+Então uma saída coerente seria da ordem de:
 
 ```text
-Amplitude : 1.571763 V
-Aout/Ain  : 0.157178
+Corrente
+--------------------------------
+  Minimo    :    -9.87... mA
+  Maximo    :     9.87... mA
+  Media     :     0.00... mA
+  Amplitude :     9.87... mA
+  RMS       :     6.98... mA
+
+Potencia media
+--------------------------------
+  Fonte      :     0.0488... W
+  Resistor   :     0.0488... W
+  Capacitor  :     ~0.0000 W
 ```
 
-está excelente.
-
-Também é importante notar isto:
-
-```text
-Tempo inicial : 9.001462 ms
-Tempo final   : 10.000000 ms
-```
-
-O primeiro ponto não caiu exatamente em `9 ms`, por causa do passo adaptativo interno do ngspice. Isso explica parte da pequena diferença no RMS e na média.
-
-Agora temos uma base sólida em C++20:
-
-```text
-libngspice
-   ↓
-time, vin, vout
-   ↓
-std::vector<double>
-   ↓
-análise temporal correta
-   ├── mínimo
-   ├── máximo
-   ├── média
-   ├── amplitude
-   └── RMS
-```
-
-O próximo passo natural é calcular, ainda sem plotar:
-
-* período;
-* frequência;
-* cruzamentos por zero;
-* atraso temporal entre `vin` e `vout`;
-* defasagem em graus.
-
-Isso nos permitirá chegar em algo como:
-
-```text
-Frequencia        : 1000.000 Hz
-Periodo           : 1.000000 ms
-Atraso v(out)     : 0.224... ms
-Defasagem         : -80.96 deg
-Ganho             : 0.157178
-Ganho             : -16.07 dB
-```
-
-e tudo diretamente a partir dos vetores retornados pela `libngspice`.
+O passo seguinte pode ser separar corretamente **potência ativa \(P\)**, **reativa \(Q\)** e **aparente \(S\)** para fonte, resistor e capacitor.
 
