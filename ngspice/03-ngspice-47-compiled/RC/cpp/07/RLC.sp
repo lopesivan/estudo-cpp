@@ -3,7 +3,7 @@
 .param A      = 10
 .param f      = 1k
 .param n      = 20
-.param np     = 500
+.param np     = 5500
 
 .param T      = {1/f}
 
