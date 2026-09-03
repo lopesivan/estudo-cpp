@@ -1,3 +1,7 @@
-print("Vin RMS     =", rms("in"))
-print("Vout RMS    =", rms("out"))
-print("2* Vout RMS =", 2 * rms("out"))
+vin = rms("in")
+vout = rms("out")
+
+print(vin)
+print(vout)
+
+print("ganho =", vout / vin)
