@@ -671,3 +671,115 @@ $$
 
 para verificarmos corrente, potência ativa, potência aparente e fator de potência desse circuito.
 
+
+
+
+
+
+
+
+
+Esse resultado ficou excelente. O programa C++ está reproduzindo a análise fasorial com erro numérico muito pequeno e, mais importante, o balanço de potência fechou praticamente exatamente.
+
+Os valores principais:
+
+$$
+V_s \approx 119.989\text{ V RMS}
+$$
+
+$$
+V_{\text{bobina}}\approx83.976\text{ V RMS}
+$$
+
+$$
+V_{R2}\approx70.007\text{ V RMS}
+$$
+
+e:
+
+$$
+I\approx2.80026\text{ A RMS}
+$$
+
+batem com o problema original de \(120\text{ V}\), \(84\text{ V}\) e \(70\text{ V}\).
+
+A frequência medida também ficou praticamente perfeita:
+
+$$
+f=59.999996\text{ Hz}
+$$
+
+e a fase da corrente:
+
+$$
+\phi_I=-43.201993^\circ
+$$
+
+confirma que o circuito é indutivo: a corrente está atrasada em relação à fonte.
+
+O fator de potência:
+
+$$
+FP=0.728944
+$$
+
+é coerente com:
+
+$$
+FP=\cos(43.201993^\circ)\approx0.729.
+$$
+
+Na parte de potência, o resultado é ainda mais interessante:
+
+$$
+P=244.925448\text{ W}
+$$
+
+$$
+Q=230.016445\text{ var}
+$$
+
+$$
+S=336.000142\text{ VA}
+$$
+
+e essas grandezas satisfazem:
+
+$$
+S^2\approx P^2+Q^2.
+$$
+
+Além disso, o detalhamento por componente confirma o comportamento físico:
+
+```text
+R1 : 48.889153 W
+L1 : -0.000215 W
+R2 : 196.036510 W
+```
+
+O indutor ideal tem potência média praticamente nula, como esperado. Esse pequeno valor negativo de \(-0.215\text{ mW}\) é apenas erro numérico de integração/interpolação.
+
+E o balanço:
+
+```text
+R1 + L1 + R2  = 244.925448 W
+Fonte forneceu = 244.925448 W
+Erro balanco   = ~0 W
+```
+
+é uma ótima validação de todo o método.
+
+Também vale destacar que agora o programa não está apenas “lendo o ngspice”; ele já está funcionando como um analisador de circuitos em regime senoidal. A próxima evolução natural seria calcular também:
+
+$$
+Q_L,\quad Q_{R1},\quad Q_{R2}
+$$
+
+individualmente e montar uma tabela completa por elemento com:
+
+$$
+V_{RMS},\ I_{RMS},\ P,\ Q,\ S,\ FP,\ \phi.
+$$
+
+Isso deixaria a análise muito próxima de um pequeno analisador de potência em C++ sobre a `libngspice`.
+
