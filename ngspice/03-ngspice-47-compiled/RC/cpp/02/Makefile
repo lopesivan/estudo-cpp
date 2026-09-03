@@ -1,18 +1,22 @@
-NGSPICE := /home/linuxbrew/.linuxbrew/Cellar/ivan/ngspice/bin/ngspice
-NETLIST := RC.sp
-DATA    := rc.dat
-PLOT    := plot.py
-PYTHON  := PYENV_VERSION=jupyter python3
+NGSPICE  := /home/linuxbrew/.linuxbrew/Cellar/ivan/ngspice/bin/ngspice
+NETLIST  := RC.sp
+DATA     := rc.dat
 
-.PHONY: all run plot clean
+CPPFLAGS  =
+CXXFLAGS  = -Wall -Wno-parentheses -std=c++20
+LDFLAGS   =
+LDLIBS    =
 
-all: plot
+.PHONY: all run clean
 
-run:
+all: main
+
+$(DATA):
 	$(NGSPICE) -b $(NETLIST)
 
-plot: run
-	$(PYTHON) $(PLOT)
+run: main $(DATA)
+	./main
 
 clean:
-	rm -f $(DATA)
+	$(RM) $(DATA)
+	$(RM) main main.o
