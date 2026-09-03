@@ -2,8 +2,8 @@
 
 .param A      = 10       ; Amplitude 10
 .param f      = 1k       ; frequencia de 1k Hz
-.param n      = 2        ; numero de períodos
-.param np     = 1000     ; número de pontos
+.param n      = 3        ; numero de períodos
+.param np     = 100      ; número de pontos
 .param T      = {1/f}    ; período
 .param tstart = T/100    ; tempo inicial
 .param tstop  = n*T      ; tempo final
@@ -21,13 +21,18 @@ C1 out  0 1u
 .control
     run
 
+    * Cruzamentos entre v(in) e v(out)
+    meas tran tcross1 WHEN v(in)=v(out) CROSS=1
+    meas tran vcross1 FIND v(in) WHEN v(in)=v(out) CROSS=1
+
+    meas tran tcross2 WHEN v(in)=v(out) CROSS=2
+    meas tran vcross2 FIND v(in) WHEN v(in)=v(out) CROSS=2
+
     set wr_singlescale
     set wr_vecnames
     option numdgt=16
 
     wrdata rc.dat v(in) v(out)
-
-    quit
 .endc
 
 .end
