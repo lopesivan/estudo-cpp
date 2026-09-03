@@ -27,8 +27,8 @@ all: main
 main: main.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $< $(LDLIBS) -o $@
 
-run: main
-	./main
+run:
+	LD_LIBRARY_PATH=$(LUAENV)/lib ./main
 
 clean:
 	$(RM) main
