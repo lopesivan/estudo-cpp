@@ -1,72 +1,87 @@
-Sim. No seu `plot.py`, você pode calcular a amplitude diretamente de cada vetor e colocar essa informação na legenda.
+Sim. Como você já está passando os vetores para Python através de `rc.dat`, eu faria algo semelhante para as **medidas escalares** do ngspice.
 
-Como seus sinais são aproximadamente senoidais, uma forma simples é:
+Dentro do `.control`, depois dos `meas`, os resultados das medições ficam disponíveis como vetores escalares. Então podemos gravá-los em outro arquivo com `wrdata`.
 
-$$
-A=\frac{V_{\max}-V_{\min}}{2}
-$$
+Por exemplo:
 
-No seu código atual , ficaria assim:
+```spice id="4sqb8c"
+.control
+    run
 
-```python
-import numpy as np
-import matplotlib.pyplot as plt
+    * Vetores da simulação
+    set wr_singlescale
+    set wr_vecnames
+    option numdgt=16
+    wrdata rc.dat v(in) v(out)
 
-data = np.loadtxt("rc.dat", skiprows=1)
+    * Interseções
+    meas tran tcross1 WHEN v(in)=v(out) CROSS=1
+    meas tran vcross1 FIND v(in) WHEN v(in)=v(out) CROSS=1
 
-t = data[:, 0]
-vin = data[:, 1]
-vout = data[:, 2]
+    meas tran tcross2 WHEN v(in)=v(out) CROSS=2
+    meas tran vcross2 FIND v(in) WHEN v(in)=v(out) CROSS=2
 
-Ain = (vin.max() - vin.min()) / 2
-Aout = (vout.max() - vout.min()) / 2
-
-plt.plot(
-    t * 1e3,
-    vin,
-    label=f"v(in)  A={Ain:.3f} V"
-)
-
-plt.plot(
-    t * 1e3,
-    vout,
-    label=f"v(out) A={Aout:.3f} V"
-)
-
-plt.xlabel("Tempo [ms]")
-plt.ylabel("Tensão [V]")
-plt.grid()
-plt.legend()
-plt.show()
+    * Passa as medidas para arquivo
+    wrdata measures.dat tcross1 vcross1 tcross2 vcross2
+.endc
 ```
 
-A legenda ficará aproximadamente:
+A ideia fica:
 
 ```text
-v(in)   A=9.99 V
-v(out)  A=1.xx V
+                   ┌── rc.dat ──────> time, vin, vout
+ngspice ───────────┤
+                   └── measures.dat -> tcross1, vcross1, ...
 ```
 
-Para o seu RC em 1 kHz, teoricamente esperamos algo próximo de:
+No Python, você lê os escalares separadamente.
+
+Por exemplo:
+
+```python
+measures = np.loadtxt("measures.dat", skiprows=1)
+
+print(measures)
+```
+
+Mas existe uma questão com `wrdata`: esses resultados de `.meas` são **escalares**, enquanto `v(in)` e `v(out)` são vetores temporais. Para integração ngspice → Python, eu prefiro uma solução ainda mais limpa: fazer o ngspice escrever explicitamente apenas os números em um arquivo usando `echo`/redirecionamento do interpretador, ou deixar o Python calcular as interseções a partir de `rc.dat`.
+
+Na arquitetura que você está construindo, eu separaria assim:
 
 $$
-A_{in}=10\,V
+\boxed{\text{ngspice} \rightarrow \text{dados brutos}}
 $$
 
-e
+```text
+time
+v(in)
+v(out)
+```
+
+e:
 
 $$
-A_{out}
-=
-\frac{10}{\sqrt{1+(2\pi fRC)^2}}
-\approx1.57\,V.
+\boxed{\text{Python} \rightarrow \text{processamento}}
 $$
 
-Depois podemos acrescentar na mesma legenda também o **ganho**:
+```text
+amplitude
+RMS
+cruzamentos
+defasagem
+ganho
+FFT
+```
 
-$$
-\frac{A_{out}}{A_{in}}
-$$
+Isso tem uma vantagem importante: seu Python recebe os **mesmos dados simulados** e você pode implementar qualquer algoritmo de análise sem precisar modificar `RC.sp` toda vez.
 
-e a **defasagem entre `v(in)` e `v(out)`**, deixando o gráfico parecido com as informações que você observaria em um osciloscópio.
+Por outro lado, se seu objetivo agora é especificamente aprender **como extrair resultados calculados pelo próprio ngspice e passá-los para Python**, então vale fazermos isso: podemos criar um `measures.dat` com uma estrutura simples como
 
+```text
+tcross1  0.000...
+vcross1  ...
+tcross2  0.000...
+vcross2  ...
+```
+
+e adaptar o `plot.py` para ler **`rc.dat` + `measures.dat`**, usando os cruzamentos calculados pelo ngspice em vez de recalculá-los no Python.
